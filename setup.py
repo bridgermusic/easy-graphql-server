@@ -37,7 +37,7 @@ setup(
     ],
     extras_require={
         'tests': [
-            'django==4.0',
+            'django==3.2',
             'faker==11.1.0',
         ],
     },
