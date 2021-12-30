@@ -1,7 +1,9 @@
+#!/usr/bin/env python
+
 from re import search
 from setuptools import setup, find_packages
 
-version ='0.8.0a'
+version ='0.8.0a0'
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
@@ -35,7 +37,7 @@ setup(
     ],
     extras_require={
         'tests': [
-            'django==4.0',
+            'django==3.2',
             'faker==11.1.0',
         ],
     },
