@@ -12,7 +12,6 @@ from graphql.language.ast import ValueNode, StringValueNode
 from graphql.language.printer import print_ast
 
 
-
 __all__ = (
     'Boolean', 'Int', 'String', 'Float',
     'Decimal',
@@ -47,7 +46,8 @@ def parse_datetime_value(input_value: Any) -> datetime.datetime:
     try:
         return datetime.datetime.fromisoformat(input_value)
     except Exception as error:
-        raise ValueError(f'Cannot parse DateTime from: {repr(input_value)}, got: {error}') from error
+        raise ValueError(
+            f'Cannot parse DateTime from: {repr(input_value)}, got: {error}') from error
 
 def parse_datetime_literal(value_node: ValueNode, _variables: Any = None) -> datetime.datetime:
     """ Parses an externally provided AST value to use as an input. """
@@ -137,7 +137,8 @@ def parse_jsonstring_value(input_value: Any) -> datetime.time:
     try:
         return json.loads(input_value)
     except Exception as error:
-        raise ValueError(f'Cannot parse JSONString from: {repr(input_value)}, got: {error}') from error
+        raise ValueError(
+            f'Cannot parse JSONString from: {repr(input_value)}, got: {error}') from error
 
 def parse_jsonstring_literal(value_node: ValueNode, _variables: Any = None) -> datetime.time:
     """ Parses an externally provided AST value to use as an input. """

@@ -73,7 +73,7 @@ class Schema:
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
 
-    def execute(self, source, variables=None, dict_output=False):
+    def execute(self, source, variables=None, serializable_output=False):
         """
             Execute a GraphQL query within the schema.
         """
@@ -82,11 +82,12 @@ class Schema:
             source = source,
             variable_values = variables or {},
         )
-        if dict_output:
+        if serializable_output:
             return {
                 'data': result.data,
                 'errors': result.errors,
             }
+        return result
 
     def check(self, graphql_schema=None):
         """

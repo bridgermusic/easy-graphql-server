@@ -47,7 +47,7 @@ class DjangoModelManager(OrmModelManager):
 
     # public methods to retrieve available filters for querying
 
-    # pylint: disable=W0221 # Number of parameters was 1 in 'OrmModelManager.get_filters' and is now 3 in overridden 'DjangoModelManager.get_filters' method
+    # pylint: disable=W0221 # Number of parameters was 1 in 'OrmModelManager.get_filters'
     def get_filters(self, mapping=None, prefix=''):
         filters = {}
         # base mapping
@@ -68,9 +68,12 @@ class DjangoModelManager(OrmModelManager):
                 for lookup_name, lookup_graphql_type in LOOKUPS.get(graphql_type, {}).items():
                     filters[f'{prefixed_field_name}__{lookup_name}'] = lookup_graphql_type
                     # apply same filters as for integers on date/time parts
-                    if graphql_type in (types.Date, types.DateTime, types.Time) and lookup_graphql_type == types.Int:
-                        for int_lookup_name, int_lookup_graphql_type in LOOKUPS[types.Int].items():
-                            filters[f'{prefixed_field_name}__{lookup_name}__{int_lookup_name}'] = int_lookup_graphql_type
+                    if (graphql_type in (types.Date, types.DateTime, types.Time)
+                            and lookup_graphql_type == types.Int):
+                        int_lookups = LOOKUPS[types.Int]
+                        for int_lookup_name, int_lookup_graphql_type in int_lookups.items():
+                            name = f'{prefixed_field_name}__{lookup_name}__{int_lookup_name}'
+                            filters[name] = int_lookup_graphql_type
         # result
         return filters
 
@@ -117,8 +120,14 @@ class DjangoModelManager(OrmModelManager):
         return result
 
     def build_queryset(self, graphql_selection):
-        base_queryset, only, prefetch_related, select_related = self.build_queryset_parts(graphql_selection)
-        return base_queryset.only(*only).prefetch_related(*prefetch_related).select_related(*select_related)
+        base_queryset, only, prefetch_related, select_related = (
+            self.build_queryset_parts(graphql_selection)
+        )
+        return (base_queryset
+            .only(*only)
+            .prefetch_related(*prefetch_related)
+            .select_related(*select_related)
+        )
 
     def build_queryset_parts(self, graphql_selection, field_prefix=''): # pylint: disable=R0914 # Too many local variables
         # initialize result
@@ -136,20 +145,26 @@ class DjangoModelManager(OrmModelManager):
                 foreign_field = self.fields.foreign[field_name]
                 only.append(field_prefix + foreign_field.value_field_name)
                 select_related.append(field_prefix + field_name)
-                foreign_orm_model_manager = self.model.schema.get_model_config_from_orm_model(foreign_field.orm_model).orm_model_manager
-                # pylint: disable=W0612 # Unused variable 'foreign_base_queryset'
-                foreign_base_queryset, foreign_only, foreign_prefetch_related, foreign_select_related = foreign_orm_model_manager.build_queryset_parts(graphql_subselection, f'{field_prefix}{field_name}__')
+                foreign_orm_model_manager = self.model.schema.get_model_config_from_orm_model(
+                    foreign_field.orm_model).orm_model_manager
+                # pylint: disable=W0612 # Unused variable '_'
+                _, foreign_only, foreign_prefetch_related, foreign_select_related = (
+                    foreign_orm_model_manager.build_queryset_parts(
+                        graphql_subselection, f'{field_prefix}{field_name}__')
+                )
                 only |= foreign_only
                 prefetch_related += foreign_prefetch_related
                 select_related += foreign_select_related
             # there is a subselection, and it is a related field
             elif field_name in self.fields.related:
                 related_field = self.fields.related[field_name]
-                related_orm_model_manager = self.model.schema.get_model_config_from_orm_model(related_field.orm_model).orm_model_manager
+                related_model_config = self.model.schema.get_model_config_from_orm_model(
+                    related_field.orm_model)
                 prefetch_related.append(
                     django.db.models.Prefetch(
                         field_name,
-                        queryset = related_orm_model_manager.build_queryset(graphql_subselection | {related_field.value_field_name: None})
+                        queryset = related_model_config.orm_model_manager.build_queryset(
+                            graphql_subselection | {related_field.value_field_name: None})
                     )
                 )
         # return resulting queryset
