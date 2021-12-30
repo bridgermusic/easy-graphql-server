@@ -1,0 +1,39 @@
+{
+    "data": {
+        "dummy_double": {
+            "output_text": "haha",
+            "output_number": 42.0
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_double": {
+      "output_text": "haha",
+      "output_number": 0
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+    "data": null,
+    "errors": [
+        {
+            "message": "Field 'dummy_double' argument 'input_text' of type 'String!' is required, but it was not provided.",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 3
+                }
+            ],
+            "path": null
+        }
+    ]
+}

@@ -1,0 +1,27 @@
+{
+    "data": null,
+    "errors": [
+        {
+            "message": "Field 'dummy_retrieve' argument 'input_identifier' of type 'Int!' is required, but it was not provided.",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 3
+                }
+            ],
+            "path": null
+        }
+    ]
+}
+
+;
+
+{
+    "data": {
+        "dummy_retrieve": {
+            "output_identifier": 4,
+            "output_name": "dummy_4"
+        }
+    },
+    "errors": null
+}

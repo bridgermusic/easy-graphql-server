@@ -1,0 +1,15 @@
+query {
+  dummy_retrieve {
+    output_identifier
+    output_name
+  }
+}
+
+;
+
+query {
+  dummy_retrieve (input_identifier: 4) {
+    output_identifier
+    output_name
+  }
+}

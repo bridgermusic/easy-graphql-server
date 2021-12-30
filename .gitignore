@@ -1,0 +1,6 @@
+__pycache__
+*.pyc
+VENV
+*.sqlite
+.DS_Store
+/dist

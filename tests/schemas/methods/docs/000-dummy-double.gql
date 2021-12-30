@@ -1,0 +1,24 @@
+mutation {
+  dummy_double(input_number: 21, input_text: "ha") {
+    output_text
+    output_number
+  }
+}
+
+;
+
+mutation {
+  dummy_double(input_text: "ha") {
+    output_text
+    output_number
+  }
+}
+
+;
+
+mutation {
+  dummy_double(input_number: 21) {
+    output_text
+    output_number
+  }
+}
