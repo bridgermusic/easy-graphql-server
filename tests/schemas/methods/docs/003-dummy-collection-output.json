@@ -1,0 +1,42 @@
+{
+  "data": {
+    "dummy_collection_output": {
+      "max_index": 5,
+      "collection": [
+        {
+          "index": 0,
+          "identifier": "s0"
+        },
+        {
+          "index": 1,
+          "identifier": "s1"
+        },
+        {
+          "index": 2,
+          "identifier": "s2"
+        },
+        {
+          "index": 3,
+          "identifier": "s3"
+        },
+        {
+          "index": 4,
+          "identifier": "s4"
+        }
+      ]
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_collection_output": {
+      "max_index": 0,
+      "collection": []
+    }
+  },
+  "errors": null
+}

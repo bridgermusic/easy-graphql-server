@@ -1,0 +1,52 @@
+query {
+  dummy_collection_input (
+    max_index: 2
+    collection: [{value: 3.14}, {value: 12}, {value: 7413e-2}]
+  ) {
+    sum
+  }
+}
+
+;
+
+query {
+  dummy_collection_input (
+    max_index: -1
+    collection: [{value: 3.14}, {value: 12}, {value: 7413e-2}]
+  ) {
+    sum
+  }
+}
+
+;
+
+query {
+  dummy_collection_input (
+    max_index: 0
+    collection: [{value: 3.14}, {value: 12}, {value: 7413e-2}]
+  ) {
+    sum
+  }
+}
+
+;
+
+query {
+  dummy_collection_input (
+    max_index: 4
+    collection: [{value: 3.14}, {value: 12}, {value: 7413e-2}]
+  ) {
+    sum
+  }
+}
+
+;
+
+query {
+  dummy_collection_input (
+    max_index: 4
+    collection: []
+  ) {
+    sum
+  }
+}

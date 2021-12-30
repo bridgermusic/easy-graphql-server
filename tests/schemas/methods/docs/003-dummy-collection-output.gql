@@ -1,0 +1,21 @@
+query {
+  dummy_collection_output (max_index: 5) {
+    max_index
+    collection {
+      index
+      identifier
+    }
+  }
+}
+
+;
+
+query {
+  dummy_collection_output (max_index: 0) {
+    max_index
+    collection {
+      index
+      identifier
+    }
+  }
+}

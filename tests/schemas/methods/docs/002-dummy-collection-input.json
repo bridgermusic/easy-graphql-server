@@ -1,0 +1,52 @@
+{
+  "data": {
+    "dummy_collection_input": {
+      "sum": 89.27
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_collection_input": {
+      "sum": null
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_collection_input": {
+      "sum": 3.14
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_collection_input": {
+      "sum": 89.27
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "dummy_collection_input": {
+      "sum": null
+    }
+  },
+  "errors": null
+}

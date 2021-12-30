@@ -35,6 +35,18 @@ schema.expose_query(
 )
 
 schema.expose_query(
+    name = 'dummy_collection_input',
+    input_format = {'max_index': int, 'collection': [{'value': float}]},
+    output_format = {'sum': float},
+    method = lambda max_index, collection=None: {
+        'sum': sum(
+            item['value']
+            for item in collection[:max_index + 1]
+        ) if (collection and max_index >= 0) else None
+    }
+)
+
+schema.expose_query(
     name = 'dummy_collection_output',
     input_format = {
         'max_index': easy_graphql.NonNull(easy_graphql.Int),
@@ -53,11 +65,4 @@ schema.expose_query(
             for i in range(max_index)
         ]
     }
-)
-
-schema.expose_query(
-    name = 'dummy_collection_input',
-    input_format = {'max_index': int, 'collection': [{'value': float}]},
-    output_format = {'sum': float},
-    method = lambda max_index, collection=None: {'sum': sum(collection[i]['value'] for i in range(max_index)) if collection else None}
 )

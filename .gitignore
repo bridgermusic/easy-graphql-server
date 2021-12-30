@@ -4,3 +4,4 @@ VENV
 *.sqlite
 .DS_Store
 /dist
+*.bak.*

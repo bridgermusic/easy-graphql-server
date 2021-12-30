@@ -71,13 +71,13 @@ def generate_testcase(schema, graphql_path, base_test_class=DEFAULT_BASE_TEST_CL
                 except:
                     # if different, show pretty output and re-raise assert exception
                     json_path = self._replace_extension(graphql_path, 'json')
-                    print(70 * '~')
+                    print(90 * '~')
                     print(f'{json_path} : {index}')
-                    print(70 * '-' + ' expected:')
+                    print(40 * '-' + ' EXPECTED ' + 40 * '-')
                     print(json.dumps(json_, indent=2))
-                    print(70 * '+' + ' received:')
+                    print(40 * '+' + ' RECEIVED ' + 40 * '+')
                     print(json.dumps(json_result, indent=2))
-                    print(70 * '~')
+                    print(90 * '~')
                     raise
     # set test case class name
     TestCase.__name__ = class_name
