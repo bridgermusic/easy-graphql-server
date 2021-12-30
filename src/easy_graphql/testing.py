@@ -92,10 +92,10 @@ def generate_testcases(schema, path, base_test_class=DEFAULT_BASE_TEST_CLASS):
         for entry in os.scandir(path):
             yield from generate_testcases(schema, entry.path)
 
-def load_tests_maker(schema, path, base_test_class=DEFAULT_BASE_TEST_CLASS):
+def make_tests_loader(schema, path, base_test_class=DEFAULT_BASE_TEST_CLASS):
     def load_tests(loader, tests, ignore):
-        path = os.getenv('EASY_GRAPHQL_TESTS_PATH', path)
-        for test in generate_testcases(schema, path):
+        path_ = os.getenv('EASY_GRAPHQL_TESTS_PATH', path)
+        for test in generate_testcases(schema, path_):
             tests.addTest(test)
         return tests
     return load_tests
