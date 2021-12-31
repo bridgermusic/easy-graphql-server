@@ -9,7 +9,8 @@ import enum
 import datetime
 import decimal
 
-from graphql.type.definition import GraphQLType, GraphQLInputField
+# Had to disable pylint below, because "No name '...' in module '...'"
+from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=E0611
 from graphql import \
     GraphQLEnumType, GraphQLEnumValue, \
     GraphQLField, GraphQLArgument, \

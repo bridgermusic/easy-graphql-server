@@ -2,6 +2,10 @@
 - `NonNull` for mandatory input fields
 - `authenticated_user`
 - transactions
+- exceptions
+- use description from Django fields
+- views (see graphiql also)
+- `TestCase.databases = ['default']` shouldn't be necessary in `testing`
 - check generated SQL:
         ```python
 

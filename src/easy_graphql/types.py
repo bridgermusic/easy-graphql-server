@@ -8,7 +8,8 @@ import json
 from typing import Any
 
 import graphql.type
-from graphql.language.ast import ValueNode, StringValueNode
+# Had to disable pylint below, because "No name '...' in module '...'"
+from graphql.language.ast import ValueNode, StringValueNode # pylint: disable=E0611
 from graphql.language.printer import print_ast
 
 

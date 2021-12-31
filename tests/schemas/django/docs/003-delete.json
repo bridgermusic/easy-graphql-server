@@ -1,0 +1,40 @@
+{
+  "data": {
+    "delete_person": {
+      "id": null,
+      "first_name": "Nicole",
+      "last_name": "White",
+      "home": {
+        "location": "Lake Joseph",
+        "owner": {
+          "id": 899,
+          "last_name": "Brooks"
+        }
+      },
+      "houses": []
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+    "data": {
+        "person": null
+    },
+    "errors": [
+        {
+            "message": "Person matching query does not exist.",
+            "locations": [
+                {
+                    "line": 2,
+                    "column": 3
+                }
+            ],
+            "path": [
+                "person"
+            ]
+        }
+    ]
+}

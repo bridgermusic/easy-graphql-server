@@ -1,0 +1,35 @@
+mutation {
+  delete_person (id: 445) {
+    id
+    first_name
+    last_name
+    # birth_date
+    home {
+      # id
+      location
+      owner {
+        id
+      #   first_name
+        last_name
+      #   birth_date
+      }
+    }
+    houses {
+      id
+      location
+      tenants {
+        first_name,
+        last_name
+      }
+    }
+  }
+}
+
+;
+
+query {
+  person (id: 445) {
+    id
+    first_name
+  }
+}

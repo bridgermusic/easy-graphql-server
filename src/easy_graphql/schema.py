@@ -8,9 +8,10 @@ import json
 from collections import defaultdict
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
-from graphql.type.validate import validate_schema
+# Had to disable pylint below, because "No name '...' in module '...'" and "Unable to import '...'"
+from graphql.type.validate import validate_schema # pylint: disable=E0611,E0401
+from graphql.utilities import get_introspection_query # pylint: disable=E0611,E0401
 from graphql.graphql import graphql_sync
-from graphql.utilities import get_introspection_query
 
 from .convert import to_graphql_type, to_graphql_argument
 from .model_config import ModelConfig
@@ -85,7 +86,7 @@ class Schema:
         if serializable_output:
             return {
                 'data': result.data,
-                'errors': result.errors,
+                'errors': [error.formatted for error in result.errors] if result.errors else None,
             }
         return result
 
@@ -105,7 +106,7 @@ class Schema:
             exposed, `None` otherwise.
         """
         for model_config in self.models_configs:
-            if model_config.orm_model == orm_model:
+            if model_config.orm_model_manager.orm_model == orm_model:
                 return model_config
         return None
 

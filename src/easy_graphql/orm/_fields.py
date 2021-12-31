@@ -1,5 +1,5 @@
 """
-    Base elements to manage specific ORM engines.
+    Definition of `ForeignField`, `RelatedField` and, most importantly, `FieldsInfo`.
 """
 
 
@@ -44,42 +44,13 @@ class RelatedField(LinkedField): # pylint: disable=R0903 # Too few public method
     """
 
 
-class OrmModelFields: # pylint: disable=R0903 # Too few public methods
+class FieldsInfo: # pylint: disable=R0903 # Too few public methods
     """
-        Base class for description of the fields of an ORM model.
+        Info about fields for a given ORM model.
     """
-    def __init__(self, orm_model): # pylint: disable=W0613 # Unused argument 'orm_model'
+    def __init__(self):
         self.primary = None
         self.unique = {}
         self.value = {}
         self.foreign = {}
         self.related = {}
-
-
-class OrmModelManager:
-    """
-        Base class for ORM model manager.
-
-        Useful for `ModelConfig` when exposing GraphQL methods.
-    """
-
-    model_fields_class = OrmModelFields
-
-    def __init__(self, orm_model, model):
-        self.orm_model = orm_model
-        self.model = model
-        self.fields = self.get_fields()
-
-    def get_fields(self):
-        """
-            Compute fields using the class derived from `OrmModelFields`
-            corresponding to the given ORM.
-        """
-        return self.model_fields_class(self.orm_model)
-
-    def get_filters(self):
-        """
-            Return available filters for the model.
-        """
-        raise NotImplementedError(
-            'Classes inheriting `OrmModelManager` should override `get_filters()` method')

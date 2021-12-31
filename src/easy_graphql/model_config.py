@@ -2,26 +2,10 @@
     This module defines the `ModelConfig` class.
 """
 
-import inspect
-import re
-import enum
-
 from .operations import Operation
 from .convert import to_graphql_objecttype, to_graphql_argument
 from .types import List
-
-
-@enum.unique
-class ORM(enum.Enum):
-    """
-        Enumeration of available ORM engines.
-
-        Only Django is supported so far.
-    """
-    NONE = 0
-    DJANGO = 1
-    SQLALCHEMY = 2
-    PEEWEE = 3
+from .orm import ORM
 
 
 class ModelConfig:
@@ -60,7 +44,7 @@ class ModelConfig:
             Operation.CREATE: self._concatenate_fields_options(
                 (can_write, can_create), True),
             Operation.READ: self._concatenate_fields_options(
-                (can_read), True),
+                (can_read,), True),
             Operation.UPDATE: self._concatenate_fields_options(
                 (can_write, can_update), True),
         }
@@ -68,19 +52,14 @@ class ModelConfig:
             Operation.CREATE: self._concatenate_fields_options(
                 (cannot_write, cannot_create), False),
             Operation.READ: self._concatenate_fields_options(
-                (cannot_read), False),
+                (cannot_read,), False),
             Operation.UPDATE: self._concatenate_fields_options(
                 (cannot_write, cannot_update), False),
         }
         # instanciate ORM model manager
-        if self._identify_orm(orm_model) == ORM.DJANGO:
-            # pylint: disable=C0415 # Import outside toplevel
-            from .django.model_manager import DjangoModelManager
-            self.orm_model_manager = DjangoModelManager(
-                orm_model = orm_model,
-                model = self)
-        else:
-            raise ValueError(f'Unrecognized ORM model: {orm_model}, is not a Django model')
+        self.orm_model_manager = ORM.get_manager(
+            orm_model = orm_model,
+            model_config = self)
 
     def expose_methods(self):
         """
@@ -101,9 +80,9 @@ class ModelConfig:
             # fetch one instance
             self.schema.expose_query(
                 name = self.name,
-                input_format = self.orm_model_manager.fields.unique,
+                input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
-                method = self.orm_model_manager.fetch_one,
+                method = self.orm_model_manager.read_one,
                 pass_graphql_selection = True,
             )
             # fetch many instances
@@ -111,7 +90,7 @@ class ModelConfig:
                 name = self.plural_name,
                 input_format = filters,
                 output_format = List(output_type),
-                method = self.orm_model_manager.fetch_many,
+                method = self.orm_model_manager.read_many,
                 pass_graphql_selection = True,
             )
         # expose delete method
@@ -119,23 +98,11 @@ class ModelConfig:
             # delete one instance
             self.schema.expose_mutation(
                 name = f'delete_{self.name}',
-                input_format = self.orm_model_manager.fields.unique,
+                input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
                 method = self.orm_model_manager.delete_one,
                 pass_graphql_selection = True,
             )
-
-    # identify which ORM the model belongs to
-
-    @staticmethod
-    def _identify_orm(orm_model):
-        if inspect.isclass(orm_model):
-            inherited_classes_names = tuple(map(
-                lambda cls: re.sub(r'^builtins\.', '', f'{cls.__module__}.{cls.__name__}'),
-                orm_model.__mro__))
-            if 'django.db.models.base.Model' in inherited_classes_names:
-                return ORM.DJANGO
-        return ORM.NONE
 
     # concatenate
 
@@ -164,20 +131,19 @@ class ModelConfig:
             Using recursion, it allows nesting, in a way that we never go through a given foreign
             key twice.
         """
+        fields_info = self.orm_model_manager.fields_info
         exclude = exclude or set()
         mapping = {}
         # value fields
-        for field_name, graphql_type in self.orm_model_manager.fields.value.items():
+        for field_name, graphql_type in fields_info.value.items():
             mapping[field_name] = graphql_type
         # foreign & related fields...
-        fields = self.orm_model_manager.fields.foreign | self.orm_model_manager.fields.related
-        for field_name, field in fields.items():
+        for field_name, field in (fields_info.foreign | fields_info.related).items():
             # ensure the field is exposed for this operation
             if operation != Operation.DELETE and not self.can_perform(operation, field_name):
                 continue
             # retrieve other model
-            other_model = self.schema.get_model_config_from_orm_model(
-                field.orm_model_manager.orm_model)
+            other_model = self.schema.get_model_config_from_orm_model(field.orm_model)
             if other_model is None:
                 continue
             # these fields are at stake, and will be later excluded
@@ -190,7 +156,7 @@ class ModelConfig:
                 exclude = exclude | _exclude,
             )
             # related are presented as collections
-            if field_name in self.orm_model_manager.fields.related:
+            if field_name in fields_info.related:
                 mapping[field_name] = [mapping[field_name]]
         # result
         return mapping
