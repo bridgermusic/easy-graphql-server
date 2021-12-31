@@ -1,9 +1,12 @@
+- model create
+- model update
 - `case_manager` in Schema
 - `NonNull` for mandatory input fields
 - `authenticated_user`
 - transactions
 - exceptions
 - use description from Django fields
+- `ModelConfig.only_when_child_of` should do something
 - views (see graphiql also)
 - `TestCase.databases = ['default']` shouldn't be necessary in `testing`
 - check generated SQL:

@@ -162,7 +162,8 @@ class DjangoManager(Manager):
                     django.db.models.Prefetch(
                         field_name,
                         queryset = related_model_config.orm_model_manager.build_queryset(
-                            graphql_subselection | {related_field.value_field_name: None})
+                            dict({related_field.value_field_name: None}, **graphql_subselection)
+                        )
                     )
                 )
         # return resulting queryset

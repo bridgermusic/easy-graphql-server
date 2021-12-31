@@ -55,16 +55,17 @@ LOOKUPS = {
 }
 
 
-LOOKUPS[types.DateTime] |= LOOKUPS[types.Date] | LOOKUPS[types.Time]
+LOOKUPS[types.DateTime].update(LOOKUPS[types.Date])
+LOOKUPS[types.DateTime].update(LOOKUPS[types.Time])
 
 for graphql_type in list(LOOKUPS.keys()):
     if graphql_type == types.Boolean:
         continue
-    LOOKUPS[graphql_type] |= {
+    LOOKUPS[graphql_type].update({
         'lt': graphql_type,
         'lte': graphql_type,
         'gt': graphql_type,
         'gte': graphql_type,
         'in': types.List(graphql_type),
         'isnull': types.Boolean,
-    }
+    })

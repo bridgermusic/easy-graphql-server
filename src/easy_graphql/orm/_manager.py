@@ -44,7 +44,7 @@ class Manager:
             # foreign & related field
             if isinstance(graphql_type, (dict, list)):
                 mapping = graphql_type[0] if isinstance(graphql_type, list) else graphql_type
-                filters |= self.get_filters(mapping, f'{prefixed_field_name}__')
+                filters.update(self.get_filters(mapping, f'{prefixed_field_name}__'))
             # value field
             elif graphql_type in LOOKUPS:
                 # basic filter (equality)
