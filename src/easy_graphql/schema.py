@@ -84,10 +84,7 @@ class Schema:
             variable_values = variables or {},
         )
         if serializable_output:
-            return {
-                'data': result.data,
-                'errors': [error.formatted for error in result.errors] if result.errors else None,
-            }
+            return result.formatted
         return result
 
     def check(self, graphql_schema=None):
@@ -152,10 +149,28 @@ class Schema:
 
     def _make_callback(self, method, pass_graphql_selection):
         def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
-            if pass_graphql_selection:
-                kwargs[pass_graphql_selection] = self._get_graphql_selection(
-                    info.field_nodes[0].selection_set)
-            return method(**kwargs)
+            try:
+                if pass_graphql_selection:
+                    kwargs[pass_graphql_selection] = self._get_graphql_selection(
+                        info.field_nodes[0].selection_set)
+                return method(**kwargs)
+            except Exception as error:
+                traceback = getattr(error, '__traceback__')
+                print('\n\n' + 80 * '*' + '\n*')
+                print(f'* {type(error).__qualname__}')
+                print('*')
+                for arg in error.args:
+                    print(f'* {arg}')
+                print('*')
+                while traceback:
+                    # pylint: disable=E1101 # Class 'tb_frame' has no 'f_code' member
+                    print(f'*  {traceback.tb_frame.f_code.co_filename}:{traceback.tb_lineno}')
+                    traceback = traceback.tb_next
+                print('*\n' + 80 * '*' + '\n')
+                raise Exception(
+                    f'{type(error).__name__}: '
+                    + '; '.join(map(str, error.args or []))
+                ) from error
         return callback
 
     @classmethod

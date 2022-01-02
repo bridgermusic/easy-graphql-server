@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('location', models.CharField(max_length=255)),
-                ('construction_date', models.DateField()),
+                ('construction_date', models.DateField(blank=True, null=True)),
             ],
         ),
         migrations.CreateModel(

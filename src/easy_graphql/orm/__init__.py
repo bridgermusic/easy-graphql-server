@@ -51,14 +51,14 @@ class ORM(enum.Enum):
             raise ValueError(
                 f'Unrecognized ORM for model, is neither Django, SQLAlchemy or Peewee: {orm_model}')
         if orm == cls.DJANGO:
-            from .django_manager import DjangoManager
-            return DjangoManager
+            from .django_manager import DjangoModelManager
+            return DjangoModelManager
         if orm == cls.SQLALCHEMY:
-            from .sqlalchemy_manager import SqlAlchemyManager
-            return SqlAlchemyManager
+            from .sqlalchemy_manager import SqlAlchemyModelManager
+            return SqlAlchemyModelManager
         if orm == cls.PEEWEE:
-            from .peewee_manager import PeeweeManager
-            return PeeweeManager
+            from .peewee_manager import PeeweeModelManager
+            return PeeweeModelManager
         raise ValueError('This should not happen.')
 
     @classmethod

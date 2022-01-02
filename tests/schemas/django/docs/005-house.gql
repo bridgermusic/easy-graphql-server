@@ -1,0 +1,71 @@
+mutation {
+  create_house (
+    location: "over the rainbow"
+  ) { id }
+}
+
+;
+
+mutation {
+  create_person (
+    first_name: "John"
+    last_name: "Doe"
+    birth_date: "2001-01-01"
+    houses: [
+      {location: "Paris"}
+      {location: "Aarhus"}
+    ]
+  ) {
+    id
+    houses {
+      id
+    }
+  }
+}
+
+;
+
+query {
+  houses {
+    id, location, owner { id }
+  }
+}
+
+;
+
+mutation {
+  update_house (
+    id: 2
+    _: {
+      owner: {id: 1, first_name: "Johnny"}
+    }
+  ) {
+    id
+    location
+    owner {id, first_name, last_name}
+  }
+}
+
+
+;
+
+mutation {
+  update_house (
+    id: 2
+    _: {
+      owner: {first_name: "Beth", last_name: "Doe"}
+    }
+  ) {
+    id
+    location
+    owner {id, first_name, last_name}
+  }
+}
+
+;
+
+query {
+  people {
+    id, first_name, last_name
+  }
+}

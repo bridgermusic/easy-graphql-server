@@ -1,0 +1,115 @@
+{
+  "data": {
+    "create_person": {
+      "id": 1,
+      "first_name": "Michel",
+      "last_name": "Dupont"
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+    "data": {
+        "person": {
+            "id": 1,
+            "first_name": "Michel",
+            "last_name": "Dupont"
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "people": [
+            {
+                "id": 1,
+                "first_name": "Michel",
+                "last_name": "Dupont"
+            }
+        ]
+    },
+    "errors": null
+}
+
+;
+
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Field 'id' is not defined by type 'update_person_____input_type'.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 29
+        }
+      ],
+      "path": null
+    }
+  ]
+}
+
+;
+
+{
+    "data": {
+        "update_person": {
+            "first_name": "Jean-Michel"
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "person": {
+            "id": 1,
+            "first_name": "Jean-Michel",
+            "last_name": "Dupont"
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "delete_person": {
+            "id": 1,
+            "first_name": "Jean-Michel",
+            "last_name": "Dupont"
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+  "data": {
+    "person": null
+  },
+  "errors": [
+    {
+      "message": "DoesNotExist: Person matching query does not exist.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "person"
+      ]
+    }
+  ]
+}

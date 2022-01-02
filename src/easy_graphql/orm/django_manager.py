@@ -1,19 +1,20 @@
 """
-    Definition of `DjangoManager` class.
+    Definition of `DjangoModelManager` class.
 """
 
 import django.db.models
+import django.db.transaction
 import django.contrib.postgres
 
 from .. import types
 from .. import convert
-from ._manager import Manager
+from ._manager import ModelManager
 from ._fields import FieldsInfo, ForeignField, RelatedField
 
 
-class DjangoManager(Manager):
+class DjangoModelManager(ModelManager):
     """
-        Manager class for Django ORM.
+        ModelManager class for Django ORM.
     """
 
     # metadata extraction
@@ -58,8 +59,32 @@ class DjangoManager(Manager):
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, graphql_selection, **data):
-        raise NotImplementedError()
+    def create_one(self, graphql_selection=None, **data):
+        # related things
+        related_data = {}
+        for field_name in list(data.keys()):
+            if field_name in self.fields_info.foreign:
+                data[field_name] = self._create_linked(field_name, data.pop(field_name))
+            elif field_name in self.fields_info.related:
+                related_data[field_name] = data.pop(field_name)
+        # instance itself
+        instance = self.orm_model(**data)
+        # validation
+        instance.full_clean()
+        # save
+        instance.save()
+        # related data
+        for field_name, children_data in related_data.items():
+            for child_data in children_data:
+                child_instance = self._create_linked(field_name, child_data, instance)
+                getattr(instance, field_name).add(child_instance)
+        # in case related data needs cleaning
+        instance.clean()
+        instance.clean_fields()
+        # result
+        if graphql_selection is None:
+            return instance
+        return self._instance_to_dict(instance, graphql_selection)
 
     def read_one(self, graphql_selection, **filters):
         instance = self._read(graphql_selection, **filters).get()
@@ -72,13 +97,86 @@ class DjangoManager(Manager):
             in self._read(graphql_selection, **filters).all()
         ]
 
-    def update_one(self, graphql_selection, _=None, **filters):
-        raise NotImplementedError()
+    def update_one(self, graphql_selection=None, _=None, **filters):
+        data = _ or {}
+        # retrieve the instance to update
+        instance = self._read(graphql_selection or {}, **filters).get()
+        # related things
+        related_data = {}
+        for field_name in list(data.keys()):
+            # foreign fields
+            if field_name in self.fields_info.foreign:
+                child_data = data.pop(field_name)
+                # if child_data is null, the reference will be deleted
+                if child_data is not None:
+                    child_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                        orm_model = self.fields_info.foreign[field_name].orm_model)
+                    child_identifier = child_data.pop(
+                        child_model_config.orm_model_manager.fields_info.primary, None)
+                    # if no identifier provided, create a new instance
+                    if child_identifier is None:
+                        data[field_name] = child_model_config.orm_model_manager.create_one(
+                            **child_data)
+                    # if identifier provided, update existing instance
+                    else:
+                        data[field_name] = child_model_config.orm_model_manager.update_one(
+                            _ = child_data,
+                            **{child_model_config.orm_model_manager.fields_info.primary:
+                                child_identifier})
+            # related fields
+            elif field_name in self.fields_info.related:
+                related_data[field_name] = data.pop(field_name)
+        # direct attributes
+        for key, value in data.items():
+            setattr(instance, key, value)
+        # validation
+        instance.full_clean()
+        # save
+        instance.save()
+        # related data
+        for field_name, children_data in related_data.items():
+            related_field = self.fields_info.related[field_name]
+            child_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                orm_model = related_field.orm_model)
+            children_identifiers = []
+            # create & update
+            for child_data in children_data:
+                child_identifier = child_data.pop(
+                    child_model_config.orm_model_manager.fields_info.primary, None)
+                # create if no identifier provided
+                if child_identifier is None:
+                    child_instance = child_model_config.orm_model_manager.create_one(
+                        **dict({related_field.value_field_name: instance.pk}, **child_data))
+                # update if identifier provided
+                else:
+                    child_instance = child_model_config.orm_model_manager.update_one(**{
+                        child_model_config.orm_model_manager.fields_info.primary: child_identifier,
+                        '_': child_data})
+                # store identifier
+                children_identifiers.append(child_instance.pk)
+            # delete omitted children
+            for child_instance in getattr(instance, field_name).all():
+                if child_instance.pk not in children_identifiers:
+                    child_instance.delete()
+        instance.clean()
+        instance.clean_fields()
+        # result
+        return instance
 
     def delete_one(self, graphql_selection, **filters):
         instance = self._read(graphql_selection, **filters).get()
+        result = self._instance_to_dict(instance, graphql_selection)
         instance.delete()
-        return self._instance_to_dict(instance, graphql_selection)
+        return result
+
+    # methods should be executed within an atomic database transaction
+
+    @staticmethod
+    def execute_within_transaction(method):
+        def decorated(*args, **kwargs):
+            with django.db.transaction.atomic():
+                return method(*args, **kwargs)
+        return decorated
 
     # helpers for reading
 
@@ -168,6 +266,16 @@ class DjangoManager(Manager):
                 )
         # return resulting queryset
         return base_queryset, only, prefetch_related, select_related
+
+    # helpers for creation
+
+    def _create_linked(self, linked_field_name, linked_data, root_instance=None):
+        linked_field = self.fields_info.linked[linked_field_name]
+        if isinstance(linked_field, RelatedField) and root_instance is not None:
+            linked_data[linked_field.value_field_name] = root_instance.pk
+        linked_model_config = self.model_config.schema.get_model_config_from_orm_model(
+            orm_model = linked_field.orm_model)
+        return linked_model_config.orm_model_manager.create_one(**linked_data)
 
     # Django field conversion to GraphQL type
 

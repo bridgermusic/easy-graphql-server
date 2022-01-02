@@ -1,0 +1,110 @@
+{
+  "data": {
+    "create_house": {
+      "id": 1
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+    "data": {
+        "create_person": {
+            "id": 1,
+            "houses": [
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ]
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "houses": [
+            {
+                "id": 1,
+                "location": "over the rainbow",
+                "owner": null
+            },
+            {
+                "id": 2,
+                "location": "Paris",
+                "owner": {
+                    "id": 1
+                }
+            },
+            {
+                "id": 3,
+                "location": "Aarhus",
+                "owner": {
+                    "id": 1
+                }
+            }
+        ]
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "update_house": {
+            "id": 2,
+            "location": "Paris",
+            "owner": {
+                "id": 1,
+                "first_name": "Johnny",
+                "last_name": "Doe"
+            }
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+    "data": {
+        "update_house": {
+            "id": 2,
+            "location": "Paris",
+            "owner": {
+                "id": 2,
+                "first_name": "Beth",
+                "last_name": "Doe"
+            }
+        }
+    },
+    "errors": null
+}
+
+;
+
+{
+  "data": {
+    "people": [
+      {
+        "id": 1,
+        "first_name": "Johnny",
+        "last_name": "Doe"
+      },
+      {
+        "id": 2,
+        "first_name": "Beth",
+        "last_name": "Doe"
+      }
+    ]
+  },
+  "errors": null
+}

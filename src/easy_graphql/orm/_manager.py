@@ -1,5 +1,5 @@
 """
-    Definition of `Manager` base class.
+    Definition of `ModelManager` base class.
 """
 
 from .. import types
@@ -7,9 +7,9 @@ from ..operations import Operation
 from ._lookups import LOOKUPS
 
 
-class Manager:
+class ModelManager:
     """
-        Base class for `DjangoManager`, `SqlAlchemyManager`, `PeeweeManager`
+        Base class for `DjangoModelManager`, `SqlAlchemyModelManager`, `PeeweeModelManager`
 
         Cannot be used as is, this is an abstract class that must be inherited.
     """
@@ -18,6 +18,7 @@ class Manager:
         self.orm_model = orm_model
         self.model_config = model_config
         self.fields_info = self.get_fields_info()
+        self.fields_info.compute_linked()
 
     # metadata extraction
 
@@ -101,5 +102,15 @@ class Manager:
             Delete one instance of the given ORM model.
 
             Result is a `dict`, corresponding to the format given by `graphql_selection`.
+        """
+        raise NotImplementedError()
+
+    # methods should be executed within an atomic database transaction
+
+    @staticmethod
+    def execute_within_transaction(method):
+        """
+            Decorator to execute a given method within a transaction, using
+            the corresponding ORM.
         """
         raise NotImplementedError()

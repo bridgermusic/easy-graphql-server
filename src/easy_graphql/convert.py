@@ -109,23 +109,24 @@ def to_graphql_objecttype(type_, prefix, for_input=False):
     # mapping
     if isinstance(type_, dict):
         if for_input:
-            object_type = GraphQLInputObjectType(f'{prefix}__input_type', lambda : {
-                key: GraphQLInputField(
-                    to_graphql_type(
-                        type_ = value,
-                        prefix = f'{prefix}__{key}',
-                        for_input = for_input))
-                for key, value in type_.items()
-            })
+            object_type_class = GraphQLInputObjectType
+            object_name = f'{prefix}__input_type'
+            field_class = GraphQLInputField
         else:
-            object_type = GraphQLObjectType(f'{prefix}__output_type', lambda : {
-                key: GraphQLField(to_graphql_type(value, f'{prefix}__{key}', for_input=for_input))
-                for key, value in type_.items()
-            })
+            object_type_class = GraphQLObjectType
+            object_name = f'{prefix}__output_type'
+            field_class = GraphQLField
+        object_type = object_type_class(object_name, lambda : {
+            key: field_class(to_graphql_type(
+                type_ = value,
+                prefix = f'{prefix}__{key}',
+                for_input = for_input))
+            for key, value in type_.items()
+        })
         _objecttype_cache[cache_key] = object_type
         return object_type
     # otherwise
-    return GraphQLInputField(type_) if for_input else GraphQLField(format)
+    return GraphQLInputField(type_) if for_input else GraphQLField(type_)
 
 def to_graphql_argument(type_, prefix):
     """
@@ -138,7 +139,14 @@ def to_graphql_argument(type_, prefix):
     # mapping
     if isinstance(type_, dict):
         return {
-            key: GraphQLArgument(to_graphql_type(value, prefix, for_input=True))
+            key: (
+                value
+                if isinstance(value, GraphQLArgument) else
+                GraphQLArgument(to_graphql_type(
+                    type_ = value,
+                    prefix = f'{prefix}__{key}',
+                    for_input = True))
+            )
             for key, value in type_.items()
         }
     # otherwise
