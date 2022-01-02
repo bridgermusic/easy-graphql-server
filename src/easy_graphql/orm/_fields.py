@@ -49,8 +49,21 @@ class FieldsInfo: # pylint: disable=R0903 # Too few public methods
         Info about fields for a given ORM model.
     """
     def __init__(self):
+        # primary key as `str`
         self.primary = None
+        # unique keys as `dict[str,GraphQLScalarType]`
         self.unique = {}
+        # value fields as `dict[str,GraphQLType]`
         self.value = {}
+        # foreign fields as `dict[str,ForeignField]`
         self.foreign = {}
+        # related fields as `dict[str,RelatedField]`
         self.related = {}
+        # linked fields as `dict[str,LinkedField]` (self.foreign | self.related)
+        self.linked = None
+
+    def compute_linked(self):
+        """
+            Merge `self.foreign` and `self.related` into `self.linked`
+        """
+        self.linked = dict(self.foreign, **self.related)

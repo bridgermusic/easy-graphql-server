@@ -1,0 +1,73 @@
+mutation {
+  create_person (first_name: "Michel", last_name: "Dupont") {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  people (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  update_person (id: 1, _: {id: 42}) {
+    first_name
+  }
+}
+
+;
+
+mutation {
+  update_person (id: 1, _: {first_name: "Jean-Michel"}) {
+    first_name
+  }
+}
+
+;
+
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  delete_person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}

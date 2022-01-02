@@ -68,13 +68,30 @@ class ModelConfig:
 
             Only allowed methods will be exposed.
         """
+        # do not expose if explicitely forbidden
+        if self.only_when_child_of:
+            return
         # available filters for querying
         filters = self.orm_model_manager.get_filters()
         # this is the common output format for all methods
-        output_type = self._get_type(
-            operation = Operation.READ,
+        output_type = to_graphql_objecttype(
+            type_ = self.get_type_mapping(Operation.READ),
             prefix = self.name,
         )
+        # expose create method
+        if self.available_operations[Operation.CREATE]:
+            # create one instance
+            self.schema.expose_mutation(
+                name = f'create_{self.name}',
+                input_format = to_graphql_argument(
+                    type_ = self.get_type_mapping(Operation.CREATE),
+                    prefix = f'create_{self.name}',
+                ),
+                output_format = output_type,
+                method = self.orm_model_manager.execute_within_transaction(
+                    self.orm_model_manager.create_one),
+                pass_graphql_selection = True,
+            )
         # expose read methods
         if self.available_operations[Operation.READ]:
             # fetch one instance
@@ -82,7 +99,8 @@ class ModelConfig:
                 name = self.name,
                 input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
-                method = self.orm_model_manager.read_one,
+                method = self.orm_model_manager.execute_within_transaction(
+                    self.orm_model_manager.read_one),
                 pass_graphql_selection = True,
             )
             # fetch many instances
@@ -90,7 +108,24 @@ class ModelConfig:
                 name = self.plural_name,
                 input_format = filters,
                 output_format = List(output_type),
-                method = self.orm_model_manager.read_many,
+                method = self.orm_model_manager.execute_within_transaction(
+                    self.orm_model_manager.read_many),
+                pass_graphql_selection = True,
+            )
+        # expose UPDATE method
+        if self.available_operations[Operation.UPDATE]:
+            # update one instance
+            self.schema.expose_mutation(
+                name = f'update_{self.name}',
+                input_format = to_graphql_argument(
+                    type_ = dict(
+                        {'_': self.get_type_mapping(Operation.UPDATE)},
+                        ** self.orm_model_manager.fields_info.unique),
+                    prefix = f'update_{self.name}',
+                ),
+                output_format = output_type,
+                method = self.orm_model_manager.execute_within_transaction(
+                    self.orm_model_manager.update_one),
                 pass_graphql_selection = True,
             )
         # expose delete method
@@ -100,7 +135,8 @@ class ModelConfig:
                 name = f'delete_{self.name}',
                 input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
-                method = self.orm_model_manager.delete_one,
+                method = self.orm_model_manager.execute_within_transaction(
+                    self.orm_model_manager.delete_one),
                 pass_graphql_selection = True,
             )
 
@@ -124,7 +160,7 @@ class ModelConfig:
 
     # types computation
 
-    def get_type_mapping(self, operation, exclude=None):
+    def get_type_mapping(self, operation, exclude=None, depth=0):
         """
             Return a `dict` from `str` to GraphQL types, corresponding to the model.
 
@@ -134,38 +170,48 @@ class ModelConfig:
         fields_info = self.orm_model_manager.fields_info
         exclude = exclude or set()
         mapping = {}
+        # no mapping for deletion
+        if operation == Operation.DELETE:
+            return {}
         # value fields
         for field_name, graphql_type in fields_info.value.items():
+            # primary fields mustn't be exposed for creation & update, unless nested
+            if operation in (Operation.CREATE, Operation.UPDATE):
+                if depth == 0 and field_name == fields_info.primary:
+                    continue
+            # ensure the field is exposed for this operation
+            if not self.can_perform(operation, field_name):
+                continue
+            # map
             mapping[field_name] = graphql_type
         # foreign & related fields...
-        for field_name, field in (fields_info.foreign | fields_info.related).items():
+        for field_name, field in fields_info.linked.items():
             # ensure the field is exposed for this operation
-            if operation != Operation.DELETE and not self.can_perform(operation, field_name):
+            if not self.can_perform(operation, field_name):
                 continue
-            # retrieve other model
-            other_model = self.schema.get_model_config_from_orm_model(field.orm_model)
-            if other_model is None:
+            # retrieve other model config
+            other_model_config = self.schema.get_model_config_from_orm_model(field.orm_model)
+            if other_model_config is None:
+                continue
+            # only_when_child_of is important
+            if other_model_config.only_when_child_of and not issubclass(
+                    self.orm_model_manager.orm_model, other_model_config.only_when_child_of):
                 continue
             # these fields are at stake, and will be later excluded
-            _exclude = {(self, field_name), (other_model, field.field_name)}
+            _exclude = {(self, field_name), (other_model_config, field.field_name)}
             if exclude & _exclude:
                 continue
             # ...with recursion
-            mapping[field_name] = other_model.get_type_mapping(
+            mapping[field_name] = other_model_config.get_type_mapping(
                 operation = operation,
                 exclude = exclude | _exclude,
+                depth = depth + 1,
             )
             # related are presented as collections
             if field_name in fields_info.related:
                 mapping[field_name] = [mapping[field_name]]
         # result
         return mapping
-
-    def _get_type(self, operation, prefix):
-        return to_graphql_objecttype(
-            type_ = self.get_type_mapping(operation),
-            prefix = prefix,
-        )
 
     def _get_argument(self, operation, prefix):
         return to_graphql_argument(
@@ -181,15 +227,19 @@ class ModelConfig:
 
             Of course, this does not make sense for `Operation.DELETE`, which raises an exception.
         """
+        # deletion doesn't apply to one field
         if operation == Operation.DELETE:
             raise ValueError(
                 'Model.can_perform can only be called with `operation != Operation.DELETE`')
+        # cannot if not in explicitely exposed fields
         if self.concatenated_fields[operation]:
             if field_name not in self.concatenated_fields[operation]:
                 return False
+        # cannot if in explicitely forbidden fields
         if self.concatenated_exclude[operation]:
             if field_name in self.concatenated_exclude[operation]:
                 return False
+        # otherwise, it works
         return True
 
     def can_expose_from_parent(self, orm_model):

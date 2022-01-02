@@ -26,8 +26,6 @@ def generate_testcase(schema, graphql_path,
         """
             Test case class, corresponding to a `.gql` file.
         """
-        reset_sequences = True
-        databases = ['default']
         @staticmethod
         def _replace_extension(path, new_extension):
             return re.sub(r'\.\w+$', f'.{new_extension}', path)
@@ -59,7 +57,7 @@ def generate_testcase(schema, graphql_path,
             return enumerate(zip(graphql_list, json_list, sql_list))
         def run_test(self, *args, **kwargs): # pylint: disable=W0613 # Unused arguments 'args', 'kwargs'
             """
-                This is the method that is actually run when performing tests.
+                Run data-driven test
             """
             # show the difference, no matter how long
             self.maxDiff = None # pylint: disable=C0103 # Attribute name "maxDiff" doesn't conform to snake_case
@@ -98,6 +96,13 @@ def generate_testcase(schema, graphql_path,
     # return generated test case class
     return TestCase('run_test')
 
+def _get_gql_path_list(path):
+    if os.path.isfile(path) and path.endswith('.gql'):
+        yield path
+    elif os.path.isdir(path):
+        for entry in os.scandir(path):
+            yield from _get_gql_path_list(entry.path)
+
 def generate_testcases(schema, path, base_test_class=DefaultBaseTestCase):
     """
         Iterator to generate all test cases for a schema, given a path.
@@ -108,11 +113,8 @@ def generate_testcases(schema, path, base_test_class=DefaultBaseTestCase):
         Each of the `.gql` file will correspond to a yielded test case class, generated
         with `generate_testcase()`.
     """
-    if os.path.isfile(path) and path.endswith('.gql'):
-        yield generate_testcase(schema, path, base_test_class)
-    elif os.path.isdir(path):
-        for entry in os.scandir(path):
-            yield from generate_testcases(schema, entry.path)
+    for gql_path in sorted(_get_gql_path_list(path)):
+        yield generate_testcase(schema, gql_path, base_test_class)
 
 def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
     """

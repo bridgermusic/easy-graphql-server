@@ -4,6 +4,8 @@ from faker import Faker
 
 
 class Person(models.Model):
+    class Meta:
+        ordering = ('id',)
     id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=32)
     last_name = models.CharField(max_length=64)
@@ -33,9 +35,11 @@ class Person(models.Model):
 
 
 class House(models.Model):
+    class Meta:
+        ordering = ('id',)
     id = models.AutoField(primary_key=True)
     location = models.CharField(max_length=255)
-    construction_date = models.DateField()
+    construction_date = models.DateField(blank=True, null=True)
     owner = models.ForeignKey(
         to=Person,
         blank=True,
@@ -47,6 +51,8 @@ class House(models.Model):
 OCCUPATION_CHOICES = ('EAT', 'SLEEP', 'WORK', 'COMMUTE', '_')
 
 class DailyOccupation(models.Model):
+    class Meta:
+        ordering = ('id',)
     id = models.AutoField(primary_key=True)
     hours_per_day = models.IntegerField()
     occupation = models.CharField(
@@ -59,6 +65,10 @@ class DailyOccupation(models.Model):
 
 
 def populate_database(random_seed=1985, houses_count=123, people_count=456, max_houses_count_per_person=5):
+
+    # ensure database is empty
+    if Person.objects.count() or House.objects.count() or DailyOccupation.objects.count():
+        raise EXception('`populate_database()` should be called on an empty database')
 
     # initialize generator
     Faker.seed(random_seed)
@@ -90,6 +100,5 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
 
     # initialize current house for people
     for person in Person.objects.all():
-        if fake.random_int(0, 2):
-            person.home = houses[fake.random_int(0, houses_count - 1)]
-            person.save()
+        person.home = houses[fake.random_int(0, houses_count - 1)]
+        person.save()
