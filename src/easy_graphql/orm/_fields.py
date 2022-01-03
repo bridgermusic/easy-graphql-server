@@ -61,6 +61,8 @@ class FieldsInfo: # pylint: disable=R0903 # Too few public methods
         self.related = {}
         # linked fields as `dict[str,LinkedField]` (self.foreign | self.related)
         self.linked = None
+        # mandatory fields upon creation as `set[str]`
+        self.mandatory = set()
 
     def compute_linked(self):
         """
