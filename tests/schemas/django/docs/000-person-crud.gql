@@ -1,4 +1,14 @@
 mutation {
+  create_person (first_name: "Michel", last_name: "Thisfakenameiswaaaytoolongandshoulddefinitelyberejectedbecauseofit") {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
   create_person (first_name: "Michel", last_name: "Dupont") {
     id
     first_name

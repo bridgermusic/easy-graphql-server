@@ -5,6 +5,7 @@
 - `authenticated_user`
 - use description from Django fields
 - views (see graphiql also)
+- subscriptions
 - check generated SQL in tests:
         ```python
 

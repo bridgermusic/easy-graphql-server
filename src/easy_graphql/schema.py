@@ -13,6 +13,7 @@ from graphql.type.validate import validate_schema # pylint: disable=E0611,E0401
 from graphql.utilities import get_introspection_query # pylint: disable=E0611,E0401
 from graphql.graphql import graphql_sync
 
+from . import exceptions
 from .convert import to_graphql_type, to_graphql_argument
 from .model_config import ModelConfig
 from .casing import Casing
@@ -110,7 +111,7 @@ class Schema:
     # private methods
 
     def _expose_method(self, type_, name, input_format, output_format, method, # pylint: disable=R0913 # Too many arguments
-            pass_graphql_selection=False):
+            pass_graphql_selection=False, pass_graphql_path=False):
         self.dirty = True
         # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
         self.methods[type_][name] = GraphQLField(
@@ -124,11 +125,17 @@ class Schema:
                 prefix = name,
             ),
             resolve = self._make_callback(
+                type_ = type_,
                 method = method,
                 pass_graphql_selection = (
                     'graphql_selection'
                     if pass_graphql_selection is True else
                     pass_graphql_selection
+                ),
+                pass_graphql_path = (
+                    'graphql_path'
+                    if pass_graphql_path is True else
+                    pass_graphql_path
                 )
             ),
         )
@@ -147,13 +154,17 @@ class Schema:
             self.dirty = False
         return self.graphql_schema
 
-    def _make_callback(self, method, pass_graphql_selection):
+    def _make_callback(self, type_, method, pass_graphql_selection, pass_graphql_path):
         def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
             try:
                 if pass_graphql_selection:
                     kwargs[pass_graphql_selection] = self._get_graphql_selection(
                         info.field_nodes[0].selection_set)
+                if pass_graphql_path:
+                    kwargs[pass_graphql_path] = [type_, info.path.key]
                 return method(**kwargs)
+            except exceptions.BaseError:
+                raise
             except Exception as error:
                 traceback = getattr(error, '__traceback__')
                 print('\n\n' + 80 * '*' + '\n*')

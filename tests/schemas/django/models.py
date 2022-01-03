@@ -26,7 +26,12 @@ class Person(models.Model):
                 hours_sum += daily_occupation.hours_per_day
             if hours_sum != 24:
                 raise django.core.exceptions.ValidationError({'daily_occupations': [
-                    f'the sum of `hours_per_day` for all items should amount to `24`, not `{hours_sum}`']})
+                    django.core.exceptions.ValidationError(
+                        message = f'the sum of `hours_per_day` for all items should amount to 24, not {hours_sum}',
+                        code = 'hours_sum',
+                        params = {'expected_hours_sum': 24, 'computed_hours_sum': hours_sum}
+                    )
+                ]})
 
     def __repr__(self):
         return f'<Person first_name={repr(self.first_name)} last_name={repr(self.last_name)} birth_date={self.birth_date}>'

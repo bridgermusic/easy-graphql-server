@@ -5,9 +5,11 @@
 import django.db.models
 import django.db.transaction
 import django.contrib.postgres
+import django.core.exceptions
 
 from .. import types
 from .. import convert
+from .. import exceptions
 from ._manager import ModelManager
 from ._fields import FieldsInfo, ForeignField, RelatedField
 
@@ -62,35 +64,40 @@ class DjangoModelManager(ModelManager):
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, graphql_selection=None, **data):
+    def create_one(self, graphql_path, graphql_selection=None, **data):
         # related things
         related_data = {}
         for field_name in list(data.keys()):
             if field_name in self.fields_info.foreign:
-                data[field_name] = self._create_linked(field_name, data.pop(field_name))
+                data[field_name] = self._create_linked(
+                    graphql_path = graphql_path + [field_name],
+                    linked_data = data.pop(field_name))
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
         # instance itself
         instance = self.orm_model(**data)
-        # validation
-        instance.full_clean()
         # save
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
-            for child_data in children_data:
-                child_instance = self._create_linked(field_name, child_data, instance)
+            for child_index, child_data in enumerate(children_data):
+                child_instance = self._create_linked(
+                    graphql_path = graphql_path + [child_index, field_name],
+                    linked_data = child_data,
+                    root_instance = instance)
                 getattr(instance, field_name).add(child_instance)
-        # in case related data needs cleaning
-        instance.clean()
-        instance.clean_fields()
+        # validation
+        try:
+            instance.full_clean()
+        except django.core.exceptions.ValidationError as exception:
+            self._reraise_validation_error(graphql_path, exception)
         # result
         if graphql_selection is None:
             return instance
         return self._instance_to_dict(instance, graphql_selection)
 
     def read_one(self, graphql_selection, **filters):
-        instance = self._read(graphql_selection, **filters).get()
+        instance = self._read_one(graphql_selection, **filters)
         return self._instance_to_dict(instance, graphql_selection)
 
     def read_many(self, graphql_selection, **filters):
@@ -100,10 +107,10 @@ class DjangoModelManager(ModelManager):
             in self._read(graphql_selection, **filters).all()
         ]
 
-    def update_one(self, graphql_selection=None, _=None, **filters):
+    def update_one(self, graphql_path, graphql_selection=None, _=None, **filters):
         data = _ or {}
         # retrieve the instance to update
-        instance = self._read(graphql_selection or {}, **filters).get()
+        instance = self._read_one(graphql_selection or {}, **filters)
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -119,10 +126,12 @@ class DjangoModelManager(ModelManager):
                     # if no identifier provided, create a new instance
                     if child_identifier is None:
                         data[field_name] = child_model_config.orm_model_manager.create_one(
+                            graphql_path = graphql_path + [field_name],
                             **child_data)
                     # if identifier provided, update existing instance
                     else:
                         data[field_name] = child_model_config.orm_model_manager.update_one(
+                            graphql_path = graphql_path + [field_name],
                             _ = child_data,
                             **{child_model_config.orm_model_manager.fields_info.primary:
                                 child_identifier})
@@ -132,8 +141,6 @@ class DjangoModelManager(ModelManager):
         # direct attributes
         for key, value in data.items():
             setattr(instance, key, value)
-        # validation
-        instance.full_clean()
         # save
         instance.save()
         # related data
@@ -143,31 +150,37 @@ class DjangoModelManager(ModelManager):
                 orm_model = related_field.orm_model)
             children_identifiers = []
             # create & update
-            for child_data in children_data:
+            for child_index, child_data in enumerate(children_data):
                 child_identifier = child_data.pop(
                     child_model_config.orm_model_manager.fields_info.primary, None)
                 # create if no identifier provided
                 if child_identifier is None:
                     child_instance = child_model_config.orm_model_manager.create_one(
+                        graphql_path = graphql_path + [child_index, field_name],
                         **dict({related_field.value_field_name: instance.pk}, **child_data))
                 # update if identifier provided
                 else:
-                    child_instance = child_model_config.orm_model_manager.update_one(**{
-                        child_model_config.orm_model_manager.fields_info.primary: child_identifier,
-                        '_': child_data})
+                    child_instance = child_model_config.orm_model_manager.update_one(
+                        graphql_path = graphql_path + [child_index, field_name],
+                        _ = child_data,
+                        **{child_model_config.orm_model_manager.fields_info.primary:
+                            child_identifier})
                 # store identifier
                 children_identifiers.append(child_instance.pk)
             # delete omitted children
             for child_instance in getattr(instance, field_name).all():
                 if child_instance.pk not in children_identifiers:
                     child_instance.delete()
-        instance.clean()
-        instance.clean_fields()
+        # validation (raise an easy_graphql exception instead of a Django one)
+        try:
+            instance.full_clean()
+        except django.core.exceptions.ValidationError as exception:
+            self._reraise_validation_error(graphql_path, exception)
         # result
         return instance
 
     def delete_one(self, graphql_selection, **filters):
-        instance = self._read(graphql_selection, **filters).get()
+        instance = self._read_one(graphql_selection, **filters)
         result = self._instance_to_dict(instance, graphql_selection)
         instance.delete()
         return result
@@ -175,7 +188,10 @@ class DjangoModelManager(ModelManager):
     # methods should be executed within an atomic database transaction
 
     @staticmethod
-    def execute_within_transaction(method):
+    def decorate(method):
+        """
+            Every exposed method will have to go through this decorator.
+        """
         def decorated(*args, **kwargs):
             with django.db.transaction.atomic():
                 return method(*args, **kwargs)
@@ -185,6 +201,12 @@ class DjangoModelManager(ModelManager):
 
     def _read(self, graphql_selection, **filters):
         return self.build_queryset(graphql_selection).filter(**filters)
+
+    def _read_one(self, graphql_selection, **filters):
+        try:
+            return self._read(graphql_selection, **filters).get()
+        except django.core.exceptions.ObjectDoesNotExist as error:
+            raise exceptions.NotFoundError(filters) from error
 
     @classmethod
     def _instance_to_dict(cls, instance, graphql_selection):
@@ -272,13 +294,41 @@ class DjangoModelManager(ModelManager):
 
     # helpers for creation
 
-    def _create_linked(self, linked_field_name, linked_data, root_instance=None):
-        linked_field = self.fields_info.linked[linked_field_name]
+    def _create_linked(self, graphql_path, linked_data, root_instance=None):
+        linked_field = self.fields_info.linked[graphql_path[-1]]
         if isinstance(linked_field, RelatedField) and root_instance is not None:
             linked_data[linked_field.value_field_name] = root_instance.pk
         linked_model_config = self.model_config.schema.get_model_config_from_orm_model(
             orm_model = linked_field.orm_model)
-        return linked_model_config.orm_model_manager.create_one(**linked_data)
+        return linked_model_config.orm_model_manager.create_one(
+            graphql_path = graphql_path,
+            **linked_data)
+
+    # validation error
+
+    @staticmethod
+    def _reraise_validation_error(graphql_path, exception):
+
+        def serialize(issue, path, field_name=None):
+            if hasattr(issue, 'error_dict'):
+                for field, errors in issue.error_dict.items():
+                    for error in errors:
+                        yield from serialize(error, path, field)
+            else:
+                for error in issue.error_list:
+                    message = error.message
+                    if error.params:
+                        message %= error.params
+                    yield {
+                        'path': path + [field_name] if field_name else path,
+                        'message': message,
+                        'params': getattr(error, 'params', {}),
+                        'code': getattr(error, 'code', None),
+                    }
+
+        issues = list(serialize(exception, graphql_path))
+        raise exceptions.ValidationError(issues) from exception
+
 
     # Django field conversion to GraphQL type
 

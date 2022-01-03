@@ -1,7 +1,7 @@
 __pycache__
 *.egg-info
 *.pyc
-VENV
+VENV*
 *.sqlite
 .DS_Store
 /dist

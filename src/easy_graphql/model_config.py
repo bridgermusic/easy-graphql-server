@@ -88,9 +88,10 @@ class ModelConfig:
                     prefix = f'create_{self.name}',
                 ),
                 output_format = output_type,
-                method = self.orm_model_manager.execute_within_transaction(
+                method = self.orm_model_manager.decorate(
                     self.orm_model_manager.create_one),
                 pass_graphql_selection = True,
+                pass_graphql_path = True,
             )
         # expose read methods
         if self.available_operations[Operation.READ]:
@@ -99,7 +100,7 @@ class ModelConfig:
                 name = self.name,
                 input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
-                method = self.orm_model_manager.execute_within_transaction(
+                method = self.orm_model_manager.decorate(
                     self.orm_model_manager.read_one),
                 pass_graphql_selection = True,
             )
@@ -108,7 +109,7 @@ class ModelConfig:
                 name = self.plural_name,
                 input_format = filters,
                 output_format = List(output_type),
-                method = self.orm_model_manager.execute_within_transaction(
+                method = self.orm_model_manager.decorate(
                     self.orm_model_manager.read_many),
                 pass_graphql_selection = True,
             )
@@ -124,9 +125,10 @@ class ModelConfig:
                     prefix = f'update_{self.name}',
                 ),
                 output_format = output_type,
-                method = self.orm_model_manager.execute_within_transaction(
+                method = self.orm_model_manager.decorate(
                     self.orm_model_manager.update_one),
                 pass_graphql_selection = True,
+                pass_graphql_path = True,
             )
         # expose delete method
         if self.available_operations[Operation.DELETE]:
@@ -135,7 +137,7 @@ class ModelConfig:
                 name = f'delete_{self.name}',
                 input_format = self.orm_model_manager.fields_info.unique,
                 output_format = output_type,
-                method = self.orm_model_manager.execute_within_transaction(
+                method = self.orm_model_manager.decorate(
                     self.orm_model_manager.delete_one),
                 pass_graphql_selection = True,
             )
@@ -216,7 +218,7 @@ class ModelConfig:
             for field_name, graphql_type in list(mapping.items()):
                 if field_name in fields_info.mandatory:
                     if linked_field is not None and field_name == linked_field.value_field_name:
-                            continue
+                        continue
                     mapping[field_name] = NonNull(graphql_type)
         # result
         return mapping

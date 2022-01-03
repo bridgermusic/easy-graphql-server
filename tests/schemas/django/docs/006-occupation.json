@@ -4,7 +4,7 @@
   },
   "errors": [
     {
-      "message": "ValidationError: {'daily_occupations': ['the sum of `hours_per_day` for all items should amount to `24`, not `16`']}; None; None",
+      "message": "{\"error\": \"VALIDATION\", \"payload\": [{\"path\": [\"mutation\", \"create_person\", \"daily_occupations\"], \"message\": \"the sum of `hours_per_day` for all items should amount to 24, not 16\", \"params\": {\"expected_hours_sum\": 24, \"computed_hours_sum\": 16}, \"code\": \"hours_sum\"}]}",
       "locations": [
         {
           "line": 3,
@@ -116,7 +116,7 @@
   },
   "errors": [
     {
-      "message": "ValidationError: {'daily_occupations': ['the sum of `hours_per_day` for all items should amount to `24`, not `23`']}; None; None",
+      "message": "{\"error\": \"VALIDATION\", \"payload\": [{\"path\": [\"mutation\", \"update_person\", \"daily_occupations\"], \"message\": \"the sum of `hours_per_day` for all items should amount to 24, not 23\", \"params\": {\"expected_hours_sum\": 24, \"computed_hours_sum\": 23}, \"code\": \"hours_sum\"}]}",
       "locations": [
         {
           "line": 3,
