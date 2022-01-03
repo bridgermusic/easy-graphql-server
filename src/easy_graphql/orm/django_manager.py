@@ -30,6 +30,9 @@ class DjangoModelManager(ModelManager):
         fields_info.primary = self.orm_model._meta.pk.name
         # value & foreign fields_info
         for field in self.orm_model._meta.fields:
+            # is it mandatory?
+            if not field.blank:
+                fields_info.mandatory |= {field.name, field.attname}
             # is it a foreign key?
             if isinstance(field, django.db.models.fields.related.ForeignKey):
                 # field to which the foreign key is referring

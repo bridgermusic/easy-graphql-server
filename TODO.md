@@ -2,12 +2,9 @@
 
 - better exceptions
 - `case_manager` in Schema
-- `NonNull` for mandatory input fields
 - `authenticated_user`
-- exceptions
 - use description from Django fields
 - views (see graphiql also)
-- `TestCase.databases = ['default']` shouldn't be necessary in `testing`
 - check generated SQL in tests:
         ```python
 
@@ -32,6 +29,8 @@
 
 # DONE
 
+- `TestCase.databases = ['default']` shouldn't be necessary in `testing`
+- `NonNull` for mandatory input fields
 - model create
 - model update
 - transactions

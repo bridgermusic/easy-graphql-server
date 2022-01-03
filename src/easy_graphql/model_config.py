@@ -4,7 +4,7 @@
 
 from .operations import Operation
 from .convert import to_graphql_objecttype, to_graphql_argument
-from .types import List
+from .types import List, NonNull
 from .orm import ORM
 
 
@@ -160,7 +160,7 @@ class ModelConfig:
 
     # types computation
 
-    def get_type_mapping(self, operation, exclude=None, depth=0):
+    def get_type_mapping(self, operation, exclude=None, depth=0, linked_field=None):
         """
             Return a `dict` from `str` to GraphQL types, corresponding to the model.
 
@@ -206,10 +206,18 @@ class ModelConfig:
                 operation = operation,
                 exclude = exclude | _exclude,
                 depth = depth + 1,
+                linked_field = field,
             )
             # related are presented as collections
             if field_name in fields_info.related:
                 mapping[field_name] = [mapping[field_name]]
+        # apply non null when necessary
+        if operation == Operation.CREATE:
+            for field_name, graphql_type in list(mapping.items()):
+                if field_name in fields_info.mandatory:
+                    if linked_field is not None and field_name == linked_field.value_field_name:
+                            continue
+                    mapping[field_name] = NonNull(graphql_type)
         # result
         return mapping
 
