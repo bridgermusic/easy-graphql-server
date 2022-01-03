@@ -216,7 +216,7 @@ class ModelConfig:
             for field_name, graphql_type in list(mapping.items()):
                 if field_name in fields_info.mandatory:
                     if linked_field is not None and field_name == linked_field.value_field_name:
-                            continue
+                        continue
                     mapping[field_name] = NonNull(graphql_type)
         # result
         return mapping
