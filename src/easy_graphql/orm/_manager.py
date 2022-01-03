@@ -65,7 +65,7 @@ class ModelManager:
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, graphql_selection, **data):
+    def create_one(self, graphql_path, graphql_selection, **data):
         """
             Create one instance of the given ORM model.
 
@@ -89,7 +89,7 @@ class ModelManager:
         """
         raise NotImplementedError()
 
-    def update_one(self, graphql_selection, _=None, **filters):
+    def update_one(self, graphql_path, graphql_selection, _=None, **filters):
         """
             Update one instance of the given ORM model.
 
@@ -108,7 +108,7 @@ class ModelManager:
     # methods should be executed within an atomic database transaction
 
     @staticmethod
-    def execute_within_transaction(method):
+    def decorate(method):
         """
             Decorator to execute a given method within a transaction, using
             the corresponding ORM.

@@ -7,7 +7,7 @@ import json
 
 class BaseError(Exception):
     """
-        Base exception for
+        Base exception for `easy_graphql`
     """
     def __init__(self, error, payload):
         message = json.dumps({
@@ -28,19 +28,17 @@ class NotFoundError(BaseError):
     """
         Thrown when an item was not found in database.
     """
-    def __init__(self, identifier):
+    def __init__(self, filters):
         BaseError.__init__(self, 'NOT_FOUND', {
-            'identifier': identifier,
+            'filters': filters,
         })
 
 class ValidationError(BaseError):
     """
         Thrown when attempting to save wrong data into database.
     """
-    def __init__(self, path):
-        BaseError.__init__(self, 'VALIDATION', {
-            'path': path,
-        })
+    def __init__(self, issues):
+        BaseError.__init__(self, 'VALIDATION', issues)
 
 class DuplicateError(BaseError):
     """
@@ -48,5 +46,14 @@ class DuplicateError(BaseError):
     """
     def __init__(self, path):
         BaseError.__init__(self, 'DUPLICATE', {
+            'path': path,
+        })
+
+class IntegrityError(BaseError):
+    """
+        Thrown when an item cannot be removed without compromising the database.
+    """
+    def __init__(self, path):
+        BaseError.__init__(self, 'INTEGRITY', {
             'path': path,
         })

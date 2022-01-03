@@ -88,21 +88,21 @@
 ;
 
 {
-    "data": {
-        "person": null
-    },
-    "errors": [
+  "data": {
+    "person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"NOT_FOUND\", \"payload\": {\"filters\": {\"id\": 445}}}",
+      "locations": [
         {
-            "message": "DoesNotExist: Person matching query does not exist.",
-            "locations": [
-                {
-                    "line": 2,
-                    "column": 3
-                }
-            ],
-            "path": [
-                "person"
-            ]
+          "line": 2,
+          "column": 3
         }
-    ]
+      ],
+      "path": [
+        "person"
+      ]
+    }
+  ]
 }
