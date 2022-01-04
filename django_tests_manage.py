@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-    Keep it mind that easy_graphql is NOT a Django application, but a library
+    Keep it mind that easy_graphql_server is NOT a Django application, but a library
     (which can be used by Django applications).
 
     This file is only there to perform unit tests (executed from the `test` script).

@@ -1,11 +1,11 @@
 import os
-from easy_graphql.testing import make_tests_loader
+from easy_graphql_server.testing import make_tests_loader
 
 from .schemas.methods.schema import schema
 
 
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/methods/docs')
-TESTS_PATH = os.getenv('EASY_GRAPHQL_TESTS_PATH', DEFAULT_TESTS_PATH)
+TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 
 
 load_tests = make_tests_loader(schema, TESTS_PATH)

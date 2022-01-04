@@ -3,5 +3,5 @@
 PYTHONPATH=src pylint \
   --confidence=HIGH,INFERENCE,INFERENCE_FAILURE,UNDEFINED \
   --include-naming-hint y \
-  easy_graphql \
+  easy_graphql_server \
   "$@"

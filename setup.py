@@ -9,13 +9,13 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 setup(
-    name='easy_graphql',
+    name='easy_graphql_server',
     version=version,
     description='Easy to use abstraction layer for GraphQL, with support for Django ORM.',
     long_description=readme,
     long_description_content_type='text/markdown',
     keywords='graphql django',
-    url='https://github.com/mathieurodic/easy_graphql',
+    url='https://github.com/mathieurodic/easy_graphql_server',
     author='Mathieu Rodic',
     author_email='graphql@rodic.fr',
     license='MIT license',
@@ -45,7 +45,7 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     # PEP-561: https://www.python.org/dev/peps/pep-0561/
-    package_data={'easy_graphql': ['py.typed']},
+    package_data={'easy_graphql_server': ['py.typed']},
     include_package_data=True,
     zip_safe=False,
 )

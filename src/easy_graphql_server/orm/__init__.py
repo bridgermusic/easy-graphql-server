@@ -45,7 +45,7 @@ class ORM(enum.Enum):
         """
         # pylint: disable=C0415 # Import outside toplevel
         # managers are directly imported below `if` clauses, so we don't have to install
-        # all ORMs for `easy_graphql` to function
+        # all ORMs for `easy_graphql_server` to function
         orm = cls.identify(orm_model)
         if orm == cls.UNKNOWN:
             raise ValueError(
