@@ -137,7 +137,8 @@ class Schema:
 
     # private methods
 
-    def _expose_method(self, type_, name, method, input_format=None, output_format=None, # pylint: disable=R0913 # Too many arguments
+    # pylint: disable=R0913 # Too many arguments
+    def _expose_method(self, type_, name, method, input_format=None, output_format=None,
             pass_graphql_selection=False, pass_graphql_path=False,
             pass_authenticated_user=False, force_authenticated_user=False):
         # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
@@ -197,16 +198,20 @@ class Schema:
             pass_authenticated_user, force_authenticated_user):
         def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
             try:
+                # ensure authenticated user when mandatory
+                if force_authenticated_user or pass_authenticated_user:
+                    authenticated_user = info.context.authenticated_user
+                if force_authenticated_user and not authenticated_user:
+                    raise exceptions.UnauthenticatedError()
+                # pass parameters
+                if pass_authenticated_user:
+                    kwargs[pass_authenticated_user] = authenticated_user
                 if pass_graphql_selection:
                     kwargs[pass_graphql_selection] = self._get_graphql_selection(
                         info.field_nodes[0].selection_set)
                 if pass_graphql_path:
                     kwargs[pass_graphql_path] = [type_, info.path.key]
-                authenticated_user = info.context.authenticated_user
-                if force_authenticated_user and not authenticated_user:
-                    raise exceptions.UnauthenticatedError()
-                if pass_authenticated_user:
-                    kwargs[pass_authenticated_user] = authenticated_user
+                # executed method
                 return method(**kwargs)
             except exceptions.BaseError:
                 raise

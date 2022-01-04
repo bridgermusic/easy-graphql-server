@@ -24,18 +24,17 @@ def generate_testcase(schema, graphql_path,
     # generate test case from files
     class TestCase(base_test_class):
         """
-            Test case class, corresponding to a `.gql` file.
+            Base test case class, associated with a `.gql` file.
         """
         @staticmethod
         def _replace_extension(path, new_extension):
             return re.sub(r'\.\w+$', f'.{new_extension}', path)
-        @classmethod
-        def _iterate_data(cls, graphql_path):
+        def _iterate_data(self, graphql_path):
             # load GraphQL input
             with open(graphql_path, 'rt', encoding='utf-8') as graphql_file:
                 graphql_list = re.split(r'\n\s*;\s*\n', graphql_file.read())
             # load JSON output
-            json_path = cls._replace_extension(graphql_path, 'json')
+            json_path = self._replace_extension(graphql_path, 'json')
             with open(json_path, 'rt', encoding='utf-8') as json_file:
                 try:
                     json_list = [
@@ -47,14 +46,27 @@ def generate_testcase(schema, graphql_path,
                     raise ValueError(f'Cannot decode JSON in `{json_path}`: '
                         '{error}\n{expected_output}') from error
             # load generated SQL
-            sql_path = cls._replace_extension(graphql_path, 'sql')
+            sql_path = self._replace_extension(graphql_path, 'sql')
             if os.path.isfile(sql_path):
                 with open(sql_path, 'rt', encoding='utf-8') as sql_file:
                     sql_list = sql_file.read().split(';;')
             else:
                 sql_list = len(graphql_list) * [None]
             # return iterator
-            return enumerate(zip(graphql_list, json_list, sql_list))
+            for i, (graphql, json_, sql) in enumerate(zip(graphql_list, json_list, sql_list)):
+                # handle USER directive
+                username_match = re.search(r'(?:^|\n)\s*#\s*USER\s*:\s*([^\s]+)', graphql)
+                username = username_match.group(1) if username_match else None
+                if username is None:
+                    user = None
+                elif not hasattr(self, 'get_or_create_user'):
+                    raise AttributeError(
+                        'To use the `USER` directive, you must implement a `get_or_create_user() method` '
+                        'on a base class for test cases, and pass this class as a `base_test_class` parameter.')
+                else:
+                    user = self.get_or_create_user(username)
+                # yield expected data
+                yield i, (user, graphql, json_, sql)
         def run_test(self, *args, **kwargs): # pylint: disable=W0613 # Unused arguments 'args', 'kwargs'
             """
                 Run data-driven test
@@ -73,9 +85,13 @@ def generate_testcase(schema, graphql_path,
                 setup_module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(setup_module)
             # actually run the test step(s)
-            for index, (graphql, json_, sql) in self._iterate_data(graphql_path):
+            for index, (user, graphql, json_, sql) in self._iterate_data(graphql_path):
                 # compute output
-                json_result = schema.execute(graphql, serializable_output=True)
+                json_result = schema.execute(
+                    source = graphql,
+                    authenticated_user = user,
+                    serializable_output = True,
+                )
                 try:
                     # compare it with what was expected
                     self.assertEqual(json_, json_result)

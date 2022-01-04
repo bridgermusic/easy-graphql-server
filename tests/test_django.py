@@ -3,6 +3,7 @@ import json
 
 import django.test
 import django.contrib.auth
+from django.conf import settings
 
 from easy_graphql_server.testing import make_tests_loader
 
@@ -13,38 +14,56 @@ from .schemas.django.models import populate_database
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')
 TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 ENDPOINT_URL = '/graphql'
-DEFAULT_USER_PASSWORD = '123456'
 
 
-class TestCase(django.test.TransactionTestCase):
+class BaseTestCase(django.test.TransactionTestCase):
     reset_sequences = True
     databases = ['default']
 
     def setUp(self):
         self.tearDown()
 
+    def get_or_create_user(self, username):
+        data = {'username': username}
+        if 'staff' in username:
+            data['is_staff'] = True
+        if 'admin' in username:
+            data['is_superuser'] = True
+        user_model = django.contrib.auth.get_user_model()
+        try:
+            user = user_model.objects.get(username = username)
+        except user_model.DoesNotExist:
+            user, created = django.contrib.auth.get_user_model().objects.get_or_create(**data)
+            user.set_password(settings.DEFAULT_USER_PASSWORD)
+            user.save()
+        return user
 
-class DjangoGraphqlHttpTest(TestCase):
+
+load_tests = make_tests_loader(
+    schema = schema,
+    path = TESTS_PATH,
+    base_test_class = BaseTestCase,
+)
+
+
+class DjangoGraphqlHttpTest(BaseTestCase):
 
     def setUp(self):
-        self.tearDown()
+        BaseTestCase.setUp(self)
         populate_database()
 
-    @staticmethod
-    def get_http_client(username = None):
+    def get_http_client(self, username = None):
         http_client = django.test.Client(HTTP_USER_AGENT='Mozilla/5.0')
         if username is not None:
-            # create user
-            user, created = django.contrib.auth.get_user_model().objects.get_or_create(username=username)
-            user.set_password(DEFAULT_USER_PASSWORD)
-            user.save()
-            # login user
-            http_client.login(username=username, password=DEFAULT_USER_PASSWORD)
+            self.get_or_create_user(username)
+            http_client.login(
+                username = username,
+                password = settings.DEFAULT_USER_PASSWORD
+            )
         return http_client
 
-    @classmethod
-    def request_graphql_endpoint(cls, data, username=None):
-        return cls.get_http_client(username = username).post(
+    def request_graphql_endpoint(self, data, username=None):
+        return self.get_http_client(username = username).post(
             path = ENDPOINT_URL,
             data = json.dumps(data),
             content_type = 'application/json',
@@ -96,19 +115,48 @@ class DjangoGraphqlHttpTest(TestCase):
         }})
 
     def test_authentication(self):
+        # regular user
         response = self.request_graphql_endpoint({'query': '''
             query {
                 me {
                     id
                     username
+                    is_superuser
+                    is_staff
                 }
             }
         '''}, username='test@example.com')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {'data': {'me': {'id': 1, 'username': 'test@example.com'}}, 'errors': None})
-
-load_tests = make_tests_loader(
-    schema = schema,
-    path = TESTS_PATH,
-    base_test_class = TestCase,
-)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 457, 'username': 'test@example.com', 'is_staff': False, 'is_superuser': False}
+        }, 'errors': None})
+        # staff user
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                    is_superuser
+                    is_staff
+                }
+            }
+        '''}, username='staff@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 458, 'username': 'staff@example.com', 'is_staff': True, 'is_superuser': False}
+        }, 'errors': None})
+        # super user
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                    is_superuser
+                    is_staff
+                }
+            }
+        '''}, username='admin@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 459, 'username': 'admin@example.com', 'is_staff': False, 'is_superuser': True}
+        }, 'errors': None})

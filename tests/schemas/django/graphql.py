@@ -1,6 +1,6 @@
 import easy_graphql_server
 
-from .models import Person, House, DailyOccupation
+from .models import Person, House, DailyOccupation, BankAccount
 from django.contrib.auth import get_user_model
 
 
@@ -27,6 +27,8 @@ schema.expose_query(
 schema.expose_model(
     orm_model = Person,
     plural_name = 'people',
+    can_expose = ('id', 'username', 'first_name', 'last_name',
+        'houses', 'home'),
 )
 
 schema.expose_model(
@@ -36,4 +38,9 @@ schema.expose_model(
 schema.expose_model(
     orm_model = DailyOccupation,
     only_when_child_of = Person,
+)
+
+schema.expose_model(
+    orm_model = BankAccount,
+    force_authenticated_user = True,
 )

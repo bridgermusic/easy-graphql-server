@@ -33,6 +33,18 @@ class NotFoundError(BaseError):
             'filters': filters,
         })
 
+class ForbiddenError(BaseError):
+    """
+        Thrown when an authenticated user is not allowed to perform an operation
+        on a specific item.
+    """
+    def __init__(self, operation, authenticated_user, path):
+        BaseError.__init__(self, 'FORBIDDEN', {
+            'operation': operation.name,
+            'authenticated_user': str(authenticated_user),
+            'path': path,
+        })
+
 class ValidationError(BaseError):
     """
         Thrown when attempting to save wrong data into database.

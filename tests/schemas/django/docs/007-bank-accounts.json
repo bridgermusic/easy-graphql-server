@@ -1,0 +1,71 @@
+{
+  "data": {
+    "bank_account": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"UNAUTHENTICATED\", \"payload\": {}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "bank_account"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+  "data": {
+    "bank_account": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"READ\", \"authenticated_user\": \"nobody@example.com\", \"path\": [\"query\", \"bank_account\"]}}",
+      "locations": [
+        {
+          "line": 4,
+          "column": 3
+        }
+      ],
+      "path": [
+        "bank_account"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+  "data": {
+    "bank_account": {
+      "iban": "GB40WQJB04536822990863",
+      "owner": {
+        "id": 131,
+        "username": "alicia.sutton@example.com"
+      }
+    }
+  },
+  "errors": null
+}
+
+;
+
+{
+  "data": {
+    "bank_account": {
+      "iban": "GB40WQJB04536822990863",
+      "owner": {
+        "id": 131,
+        "username": "alicia.sutton@example.com"
+      }
+    }
+  },
+  "errors": null
+}
