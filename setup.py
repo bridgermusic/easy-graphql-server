@@ -37,6 +37,7 @@ setup(
     ],
     extras_require={
         'tests': [
+            'sqlparse==0.4.2',
             'django==3.2',
             'faker==11.1.0',
         ],

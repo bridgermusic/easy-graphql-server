@@ -7,6 +7,7 @@ import re
 import json
 import importlib.util
 import unittest
+import sqlparse
 
 
 DefaultBaseTestCase = unittest.TestCase
@@ -51,7 +52,8 @@ def generate_testcase(schema, graphql_path,
                 with open(sql_path, 'rt', encoding='utf-8') as sql_file:
                     sql_list = sql_file.read().split(';;')
             else:
-                sql_list = len(graphql_list) * [None]
+                sql_list = []
+            sql_list += (len(graphql_list) - len(sql_list)) * ['']
             # return iterator
             for i, (graphql, json_, sql) in enumerate(zip(graphql_list, json_list, sql_list)):
                 # handle USER directive
@@ -67,7 +69,16 @@ def generate_testcase(schema, graphql_path,
                 else:
                     user = self.get_or_create_user(username)
                 # yield expected data
-                yield i, (user, graphql, json_, sql)
+                yield i, (user, graphql, json_, sql.strip())
+        @staticmethod
+        def show_diff(path, index, expectation, reality):
+            print(90 * '~')
+            print(f'{path} : {index}')
+            print(40 * '-' + ' EXPECTED ' + 40 * '-')
+            print(expectation)
+            print(40 * '+' + ' RECEIVED ' + 40 * '+')
+            print(reality)
+            print(90 * '~')
         def run_test(self, *args, **kwargs): # pylint: disable=W0613 # Unused arguments 'args', 'kwargs'
             """
                 Run data-driven test
@@ -87,6 +98,10 @@ def generate_testcase(schema, graphql_path,
                 spec.loader.exec_module(setup_module)
             # actually run the test step(s)
             for index, (user, graphql, json_, sql) in self._iterate_data(graphql_path):
+                # clear sql log
+                if sql:
+                    for orm_model_manager_class in schema.orm_model_manager_classes:
+                        orm_model_manager_class.start_sql_log()
                 # compute output
                 json_result = schema.execute(
                     source = graphql,
@@ -99,14 +114,31 @@ def generate_testcase(schema, graphql_path,
                 except:
                     # if different, show pretty output and re-raise assert exception
                     json_path = self._replace_extension(graphql_path, 'json')
-                    print(90 * '~')
-                    print(f'{json_path} : {index}')
-                    print(40 * '-' + ' EXPECTED ' + 40 * '-')
-                    print(json.dumps(json_, indent=2))
-                    print(40 * '+' + ' RECEIVED ' + 40 * '+')
-                    print(json.dumps(json_result, indent=2))
-                    print(90 * '~')
+                    self.show_diff(
+                        path = self._replace_extension(graphql_path, "json"),
+                        index = index,
+                        expectation = json.dumps(json_, indent=2),
+                        reality = json.dumps(json_result, indent=2)
+                    )
                     raise
+                # check SQL also (when provided)
+                if sql:
+                    sql_result_list = []
+                    for orm_model_manager_class in schema.orm_model_manager_classes:
+                        sql_result_list += orm_model_manager_class.get_sql_log()
+                    sql_result = '\n;\n'.join(sql_result_list)
+                    try:
+                        # compare it with what was expected
+                        self.assertEqual(sql, sql_result)
+                    except:
+                        self.show_diff(
+                            path = self._replace_extension(graphql_path, "sql"),
+                            index = index,
+                            expectation = sql,
+                            reality = sql_result,
+                        )
+                        raise
+
     # set test case class name
     TestCase.__name__ = class_name
     TestCase.__qualname__ = '.'.join(TestCase.__qualname__.split('.')[:-1] + [class_name])

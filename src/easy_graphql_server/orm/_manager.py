@@ -114,3 +114,19 @@ class ModelManager:
             the corresponding ORM.
         """
         raise NotImplementedError()
+
+    # SQL logging
+
+    @staticmethod
+    def start_sql_log():
+        """
+            Clear ORM-level SQL log
+        """
+        raise NotImplementedError()
+
+    @staticmethod
+    def get_sql_log():
+        """
+            Get a log of SQL queries executed by the ORM in the form of a `list[str]`
+        """
+        raise NotImplementedError()

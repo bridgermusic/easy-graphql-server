@@ -2,8 +2,10 @@
     Definition of `DjangoModelManager` class.
 """
 
+import django.db
 import django.db.models
 import django.db.transaction
+from django.conf import settings
 try:
     import django.contrib.postgres.fields
     WITH_POSTGRES_SUPPORT = True
@@ -464,3 +466,17 @@ class DjangoModelManager(ModelManager):
             raise ValueError(f'Could not convert {field} to graphql type')
         # result
         return graphql_type
+
+    # SQL logging
+
+    @staticmethod
+    def start_sql_log():
+        settings.DEBUG = True
+        django.db.reset_queries()
+
+    @staticmethod
+    def get_sql_log():
+        return [
+            query['sql']
+            for query in list(django.db.connection.queries)
+        ]
