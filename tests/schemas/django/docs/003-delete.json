@@ -1,5 +1,27 @@
 {
   "data": {
+    "delete_person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"DELETE\", \"authenticated_user\": \"None\", \"path\": [\"mutation\", \"delete_person\"]}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "delete_person"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+  "data": {
     "delete_person": {
       "id": 445,
       "first_name": "Nicole",

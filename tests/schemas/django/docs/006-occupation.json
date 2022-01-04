@@ -119,7 +119,7 @@
       "message": "{\"error\": \"VALIDATION\", \"payload\": [{\"path\": [\"mutation\", \"update_person\", \"daily_occupations\"], \"message\": \"the sum of `hours_per_day` for all items should amount to 24, not 23\", \"params\": {\"expected_hours_sum\": 24, \"computed_hours_sum\": 23}, \"code\": \"hours_sum\"}]}",
       "locations": [
         {
-          "line": 3,
+          "line": 5,
           "column": 3
         }
       ],

@@ -74,6 +74,8 @@ mutation {
 ;
 
 # this should fail, as sum is not 24
+
+# USER: john.doe@example.com
 mutation {
   update_person (id: 1, _: {
     daily_occupations: [
@@ -88,6 +90,8 @@ mutation {
 ;
 
 # this should add one occupation, remove one, and update one
+
+# USER: john.doe@example.com
 mutation {
   update_person (id: 1, _: {
     daily_occupations: [

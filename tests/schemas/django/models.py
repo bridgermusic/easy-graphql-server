@@ -2,7 +2,10 @@ from django.db import models
 import django.contrib.auth.models
 import django.core.exceptions
 from django.conf import settings
+
 from faker import Faker
+
+from easy_graphql_server import Operation
 
 
 class Person(django.contrib.auth.models.AbstractBaseUser):
@@ -43,6 +46,16 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
                         params = {'expected_hours_sum': 24, 'computed_hours_sum': hours_sum}
                     )
                 ]})
+
+    def ensure_permissions(self, authenticated_user, operation, data):
+        # unauthenticated requests can only create or read people
+        if authenticated_user is None:
+            return operation in (Operation.CREATE, Operation.READ)
+        # superusers can do anything
+        if authenticated_user.is_superuser:
+            return True
+        # one can always manipulate one's own account
+        return self.id == authenticated_user.id
 
     def __str__(self):
         return self.username

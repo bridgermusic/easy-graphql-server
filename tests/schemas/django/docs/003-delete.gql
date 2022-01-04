@@ -1,4 +1,14 @@
 mutation {
+  delete_person (id: 445)  {
+    id
+  }
+}
+
+;
+
+# USER: admin@example.com
+
+mutation {
   delete_person (id: 445) {
     id
     first_name

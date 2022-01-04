@@ -85,7 +85,13 @@ class DjangoModelManager(ModelManager):
                 related_data[field_name] = data.pop(field_name)
         # instance itself
         instance = self.orm_model(**data)
-        # save
+        # enforce permissions & save
+        self.model_config.enforce_permissions(
+            operation = Operation.CREATE,
+            instance = instance,
+            authenticated_user = authenticated_user,
+            graphql_path = graphql_path,
+        )
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
@@ -181,7 +187,13 @@ class DjangoModelManager(ModelManager):
         # direct attributes
         for key, value in data.items():
             setattr(instance, key, value)
-        # save
+        # enforce permissions & save
+        self.model_config.enforce_permissions(
+            operation = Operation.UPDATE,
+            instance = instance,
+            authenticated_user = authenticated_user,
+            graphql_path = graphql_path,
+        )
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
@@ -231,6 +243,12 @@ class DjangoModelManager(ModelManager):
 
     def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
         instance = self._read_one(graphql_selection, **filters)
+        self.model_config.enforce_permissions(
+            operation = Operation.DELETE,
+            instance = instance,
+            authenticated_user = authenticated_user,
+            graphql_path = graphql_path,
+        )
         result = self._instance_to_dict(
             authenticated_user = authenticated_user,
             instance = instance,
