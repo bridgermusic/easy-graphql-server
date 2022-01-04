@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# constants
+VIRTUAL_ENVIRONMENT_PATH="VENV_PYPI"
+
+# setup virtual environment
+if [ ! -d $VIRTUAL_ENVIRONMENT_PATH ]; then
+  python -m venv $VIRTUAL_ENVIRONMENT_PATH
+  source $VIRTUAL_ENVIRONMENT_PATH/bin/activate
+  pip install --upgrade pip
+  pip install --upgrade build
+  pip install --upgrade twine
+else
+  source $VIRTUAL_ENVIRONMENT_PATH/bin/activate
+fi
+
+# versionning
+OLD_VERSION=$(cat setup.cfg | egrep 'version\s*=.*' setup.cfg | cut -f2 -d= | xargs echo -n)
+echo
+read -p "Current version is $OLD_VERSION, type in a new version (or leave empty to keep $OLD_VERSION): " NEW_VERSION
+NEW_VERSION=${NEW_VERSION:-$OLD_VERSION}
+echo "New version is $NEW_VERSION"
+sed -i "s/version\s*=.*/version = $NEW_VERSION/" setup.cfg
+sed -i "s/version\s*=.*/version = '$NEW_VERSION',/" setup.py
+echo
+
+# remove existing build files
+rm -rf src/*.egg-info
+rm -rf dist/*
+
+# build package
+python -m build
+
+# upload package
+twine upload --repository pypi dist/*

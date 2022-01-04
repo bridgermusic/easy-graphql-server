@@ -3,24 +3,24 @@
 from re import search
 from setuptools import setup, find_packages
 
-version ='0.8.0a0'
+version = '0.8.1a0',
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
 setup(
     name='easy_graphql_server',
-    version=version,
+    version = '0.8.1a0',
     description='Easy to use abstraction layer for GraphQL, with support for Django ORM.',
     long_description=readme,
     long_description_content_type='text/markdown',
     keywords='graphql django',
-    url='https://github.com/mathieurodic/easy_graphql_server',
+    url='https://github.com/mathieurodic/easy-graphql-server',
     author='Mathieu Rodic',
     author_email='graphql@rodic.fr',
     license='MIT license',
     classifiers=[
-        'Development Status :: 3 - Alpha ',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
         'License :: OSI Approved :: MIT License',
