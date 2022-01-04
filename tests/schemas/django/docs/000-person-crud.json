@@ -98,6 +98,28 @@
 ;
 
 {
+  "data": {
+    "update_person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"UPDATE\", \"authenticated_user\": \"None\", \"path\": [\"mutation\", \"update_person\"]}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "update_person"
+      ]
+    }
+  ]
+}
+
+;
+
+{
     "data": {
         "update_person": {
             "first_name": "Jean-Michel"
@@ -117,6 +139,28 @@
         }
     },
     "errors": null
+}
+
+;
+
+{
+  "data": {
+    "delete_person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"DELETE\", \"authenticated_user\": \"None\", \"path\": [\"mutation\", \"delete_person\"]}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "delete_person"
+      ]
+    }
+  ]
 }
 
 ;

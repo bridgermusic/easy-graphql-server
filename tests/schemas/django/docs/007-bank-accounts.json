@@ -69,3 +69,55 @@
   },
   "errors": null
 }
+
+;
+
+{
+  "data": {
+    "bank_accounts": [
+      {
+        "iban": "GB40WQJB04536822990863",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      },
+      {
+        "iban": "GB59GLHB71849501175431",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      },
+      {
+        "iban": "GB37AAJO14268458589360",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      },
+      {
+        "iban": "GB54GGCJ57732350710832",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      },
+      {
+        "iban": "GB32PESV43048797887072",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      },
+      {
+        "iban": "GB62GHDP77701988839711",
+        "owner": {
+          "id": 131,
+          "username": "alicia.sutton@example.com"
+        }
+      }
+    ]
+  },
+  "errors": null
+}

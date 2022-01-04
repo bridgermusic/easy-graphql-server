@@ -58,6 +58,28 @@
 ;
 
 {
+  "data": {
+    "update_house": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"UPDATE\", \"authenticated_user\": \"None\", \"path\": [\"mutation\", \"update_house\", \"owner\"]}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "update_house"
+      ]
+    }
+  ]
+}
+
+;
+
+{
     "data": {
         "update_house": {
             "id": 2,
@@ -80,7 +102,7 @@
             "id": 2,
             "location": "Paris",
             "owner": {
-                "id": 2,
+                "id": 3,
                 "first_name": "Beth",
                 "last_name": "Doe"
             }
@@ -97,12 +119,20 @@
       {
         "id": 1,
         "first_name": "Johnny",
-        "last_name": "Doe"
+        "last_name": "Doe",
+        "username": "john.doe@example.com"
       },
       {
         "id": 2,
+        "first_name": "",
+        "last_name": "",
+        "username": "admin@example.com"
+      },
+      {
+        "id": 3,
         "first_name": "Beth",
-        "last_name": "Doe"
+        "last_name": "Doe",
+        "username": "beth.doe@example.com"
       }
     ]
   },

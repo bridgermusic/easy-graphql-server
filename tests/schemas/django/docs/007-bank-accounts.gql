@@ -43,3 +43,17 @@ query {
     }
   }
 }
+
+;
+
+# USER: alicia.sutton@example.com
+
+query {
+  bank_accounts {
+    iban
+    owner {
+      id
+      username
+    }
+  }
+}

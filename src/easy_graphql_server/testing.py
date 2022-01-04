@@ -61,8 +61,9 @@ def generate_testcase(schema, graphql_path,
                     user = None
                 elif not hasattr(self, 'get_or_create_user'):
                     raise AttributeError(
-                        'To use the `USER` directive, you must implement a `get_or_create_user() method` '
-                        'on a base class for test cases, and pass this class as a `base_test_class` parameter.')
+                        'To use the `USER` directive, you must implement a `get_or_create_user() '
+                        'method` on a base class for test cases, and pass this class as a '
+                        '`base_test_class` parameter.')
                 else:
                     user = self.get_or_create_user(username)
                 # yield expected data
