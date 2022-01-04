@@ -1,6 +1,6 @@
 """
     `Schema` class is defined here. This is the root class that will be used as
-    a central point to the easy_graphql API.
+    a central point to the easy_graphql_server API.
 """
 
 
@@ -22,7 +22,7 @@ from .casing import Casing
 class Schema:
 
     """
-        Base class for easy_graphql API.
+        Base class for easy_graphql_server API.
 
         Mutation methods can be exposed with `Schema.expose_mutation()`.
 

@@ -171,7 +171,7 @@ class DjangoModelManager(ModelManager):
             for child_instance in getattr(instance, field_name).all():
                 if child_instance.pk not in children_identifiers:
                     child_instance.delete()
-        # validation (raise an easy_graphql exception instead of a Django one)
+        # validation (raise an easy_graphql_server exception instead of a Django one)
         try:
             instance.full_clean()
         except django.core.exceptions.ValidationError as exception:

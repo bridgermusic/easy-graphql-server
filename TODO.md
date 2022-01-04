@@ -1,6 +1,5 @@
 # TODO
 
-- better exceptions
 - `case_manager` in Schema
 - `authenticated_user`
 - use description from Django fields
@@ -30,6 +29,7 @@
 
 # DONE
 
+- better exceptions
 - `TestCase.databases = ['default']` shouldn't be necessary in `testing`
 - `NonNull` for mandatory input fields
 - model create

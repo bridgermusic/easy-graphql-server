@@ -1,5 +1,5 @@
 """
-    Data-driven tests for schema defined with `easy_graphql.Schema`.
+    Data-driven tests for schema defined with `easy_graphql_server.Schema`.
 """
 
 import os
@@ -20,7 +20,7 @@ def generate_testcase(schema, graphql_path,
     # compute test class name
     class_name = graphql_path.split(os.sep)[-1].split('.')[0]
     class_name = re.sub(r'[^\w]+', '_', class_name).lower()
-    class_name = f'easy_graphql_test_{class_name}'
+    class_name = f'easy_graphql_server_test_{class_name}'
     # generate test case from files
     class TestCase(base_test_class):
         """
@@ -126,8 +126,8 @@ def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
         Example:
 
         ```python
-        from easy_graphql import Schema
-        from easy_graphql.testing import make_tests_loader
+        from easy_graphql_server import Schema
+        from easy_graphql_server.testing import make_tests_loader
 
         schema = Schema()
 
@@ -135,7 +135,7 @@ def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
         ```
     """
     def load_tests(loader, tests, ignore): # pylint: disable=W0613 # Unused argument 'loader', 'ignore'
-        path_ = os.getenv('EASY_GRAPHQL_TESTS_PATH', path)
+        path_ = os.getenv('easy_graphql_server_TESTS_PATH', path)
         for test in generate_testcases(schema, path_, base_test_class):
             tests.addTest(test)
         return tests

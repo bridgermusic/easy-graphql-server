@@ -1,9 +1,9 @@
-import easy_graphql
+import easy_graphql_server
 
 from .models import Person, House, DailyOccupation
 
 
-schema = easy_graphql.Schema()
+schema = easy_graphql_server.Schema()
 
 schema.expose_query(
     name = 'dummy_collection_input',

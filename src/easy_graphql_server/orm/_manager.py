@@ -32,7 +32,7 @@ class ModelManager:
         """
             Retrieve available filters for the given ORM model.
 
-            Needs corresponding `easy_graphql.ModelConfig` to be properly initialize, aka.,
+            Needs corresponding `easy_graphql_server.ModelConfig` to be properly initialize, aka.,
             just before GraphQL schema is built.
         """
         filters = {}

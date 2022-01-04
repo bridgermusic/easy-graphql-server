@@ -81,20 +81,24 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
 
     # populate houses
     for i in range(houses_count):
+        location, construction_date = fake.city(), fake.date_of_birth()
         house = House(
-            location = fake.city(),
-            construction_date = fake.date_of_birth(),
+            location = location,
+            construction_date = construction_date,
         )
         house.save()
     houses = list(House.objects.all())
 
     # populate people
     for i in range(people_count):
+        first_name = fake.first_name()
+        last_name = fake.last_name()
+        birth_date = fake.date_of_birth() if fake.random_int(0, 2) <= 1 else None
         # initialize person
         person = Person(
-            first_name = fake.first_name(),
-            last_name = fake.last_name(),
-            birth_date = fake.date_of_birth() if fake.random_int(0, 2) <= 1 else None,
+            first_name = first_name,
+            last_name = last_name,
+            birth_date = birth_date,
         )
         person.save()
         # initialize person's houses

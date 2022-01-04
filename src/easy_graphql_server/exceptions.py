@@ -7,7 +7,7 @@ import json
 
 class BaseError(Exception):
     """
-        Base exception for `easy_graphql`
+        Base exception for `easy_graphql_server`
     """
     def __init__(self, error, payload):
         message = json.dumps({
