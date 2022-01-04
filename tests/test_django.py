@@ -6,7 +6,7 @@ from .schemas.django.graphql import schema
 
 
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')
-TESTS_PATH = os.getenv('easy_graphql_server_TESTS_PATH', DEFAULT_TESTS_PATH)
+TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 
 
 class TestCase(django.test.TransactionTestCase):

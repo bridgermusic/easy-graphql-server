@@ -135,7 +135,7 @@ def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
         ```
     """
     def load_tests(loader, tests, ignore): # pylint: disable=W0613 # Unused argument 'loader', 'ignore'
-        path_ = os.getenv('easy_graphql_server_TESTS_PATH', path)
+        path_ = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', path)
         for test in generate_testcases(schema, path_, base_test_class):
             tests.addTest(test)
         return tests

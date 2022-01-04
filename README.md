@@ -1,11 +1,11 @@
-# easy_graphql_server
+# Easy GraphQL Server
 
 ## Installation
 
 easy_graphql_server can be installed from PyPI using the built-in pip command:
 
 ```bash
-pip install git+https://github.com/mathieurodic/easy_graphql_server
+pip install git+https://github.com/mathieurodic/easy-graphql-server
 ```
 
 ## Goals
