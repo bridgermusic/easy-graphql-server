@@ -298,7 +298,8 @@ class ModelConfig:
                 return False
         return True
 
-    def enforce_permissions(self, operation, instance, authenticated_user, data=None, graphql_path=None):
+    def enforce_permissions(self, operation, instance, authenticated_user,
+            data=None, graphql_path=None):
         """
             Raise an `exceptions.ForbiddenError` when `check_permissions()` returns
             `False` with the same parameters.

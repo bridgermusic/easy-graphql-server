@@ -22,8 +22,13 @@ __all__ = (
 )
 
 # non-GraphQL wrapper type, to replace NonNull in wrappings
+# pylint: disable=R0903 # Too few public methods
 
 class Mandatory:
+    """
+        Non-GraphQL wrapper type, to replace NonNull in mappings or when using
+        "natural" Python types
+    """
     def __init__(self, type_):
         self.type_ = type_
 

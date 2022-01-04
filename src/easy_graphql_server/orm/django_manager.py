@@ -6,9 +6,9 @@ import django.db.models
 import django.db.transaction
 try:
     import django.contrib.postgres.fields
-    postgres_support = True
+    WITH_POSTGRES_SUPPORT = True
 except ImportError:
-    postgres_support = False
+    WITH_POSTGRES_SUPPORT = False
 import django.core.exceptions
 
 from .. import types
@@ -143,7 +143,9 @@ class DjangoModelManager(ModelManager):
             )
         ]
 
-    def update_one(self, authenticated_user, graphql_path, graphql_selection=None, _=None, **filters):
+    def update_one(self, authenticated_user, graphql_path, graphql_selection=None,
+            _=None, **filters):
+        # variable that contains new data
         data = _ or {}
         # retrieve the instance to update
         instance = self._read_one(graphql_selection or {}, **filters)
@@ -434,9 +436,11 @@ class DjangoModelManager(ModelManager):
         # scalar
         elif isinstance(field, tuple(cls.GRAPHQL_TYPES_MAPPING)):
             graphql_type = cls.GRAPHQL_TYPES_MAPPING[type(field)]
-        # list
-        elif postgres_support and isinstance(field, django.contrib.postgres.fields.array.ArrayField):
-            graphql_type = types.List(cls._to_graphql_type_from_field(field.base_field))
+        # Postgres
+        elif WITH_POSTGRES_SUPPORT:
+            # array
+            if isinstance(field, django.contrib.postgres.fields.array.ArrayField):
+                graphql_type = types.List(cls._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:
             raise ValueError(f'Could not convert {field} to graphql type')
