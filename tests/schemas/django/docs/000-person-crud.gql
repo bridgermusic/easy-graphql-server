@@ -1,5 +1,9 @@
 mutation {
-  create_person (first_name: "Michel", last_name: "Thisfakenameiswaaaytoolongandshoulddefinitelyberejectedbecauseofit") {
+  create_person (
+    first_name: "Michel"
+    last_name: "Thisfakenameiswaaaytoolongandshoulddefinitelyberejectedbecauseofit"
+    username: "michel.dupont@example.com"
+  ) {
     id
     first_name
     last_name
@@ -9,7 +13,24 @@ mutation {
 ;
 
 mutation {
-  create_person (first_name: "Michel", last_name: "Dupont") {
+  create_person (
+    first_name: "Michel"
+    last_name: "Dupont"
+  ) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  create_person (
+    first_name: "Michel"
+    last_name: "Dupont"
+    username: "michel.dupont@example.com"
+  ) {
     id
     first_name
     last_name

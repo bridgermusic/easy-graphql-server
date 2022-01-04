@@ -21,6 +21,24 @@
 ;
 
 {
+  "data": null,
+  "errors": [
+    {
+      "message": "Field 'create_person' argument 'username' of type 'String!' is required, but it was not provided.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": null
+    }
+  ]
+}
+
+;
+
+{
   "data": {
     "create_person": {
       "id": 1,

@@ -1,6 +1,7 @@
 # this should fail: sum of `hours_per_day` should be 24
 mutation {
   create_person (
+    username: "john.doe@example.com"
     first_name: "John"
     last_name: "Doe"
     birth_date: "2001-01-01"
@@ -26,6 +27,7 @@ query {
 # this is good
 mutation {
   create_person (
+    username: "john.doe@example.com"
     first_name: "John"
     last_name: "Doe"
     birth_date: "2001-01-01"

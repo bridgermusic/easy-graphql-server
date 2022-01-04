@@ -27,8 +27,8 @@ schema.expose_query(
 schema.expose_model(
     orm_model = Person,
     plural_name = 'people',
-    can_expose = ('id', 'username', 'first_name', 'last_name',
-        'houses', 'home'),
+    can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
+        'houses', 'home', 'daily_occupations'),
 )
 
 schema.expose_model(

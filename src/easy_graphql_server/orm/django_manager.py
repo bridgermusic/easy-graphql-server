@@ -385,7 +385,7 @@ class DjangoModelManager(ModelManager):
                         message %= error.params
                     yield {
                         'path': path + [field_name] if field_name else path,
-                        'message': message,
+                        'message': str(message),
                         'params': getattr(error, 'params', {}),
                         'code': getattr(error, 'code', None),
                     }

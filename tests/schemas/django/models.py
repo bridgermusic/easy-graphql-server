@@ -11,6 +11,7 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
         db_table = 'auth_user'
     id = models.AutoField(primary_key=True)
     username = models.CharField(max_length=255, unique=True)
+    password = models.CharField(max_length=255, blank=True)
     first_name = models.CharField(max_length=32)
     last_name = models.CharField(max_length=64)
     birth_date = models.DateField(blank=True, null=True)
