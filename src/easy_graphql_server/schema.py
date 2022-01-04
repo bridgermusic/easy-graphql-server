@@ -284,7 +284,7 @@ class Schema:
             return JsonResponse({'errors': [{'message':
                 'In HTTP request body JSON object, '
                 'optional parameter "operationName" should be a string',
-            }]})
+            }]}, status=400)
         # compute & return result
         result = self.execute(
             source = query,
