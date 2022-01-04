@@ -3,33 +3,14 @@
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
-- check generated SQL in tests:
-        ```python
-
-            from django.db import connection, reset_queries
-            import re
-
-            reset_queries()
-
-            EXECUTE_GRAPHQL_QUERIES()
-
-            print()
-            print(96*'<')
-            for query in list(connection.queries):
-                print()
-                print(re.sub(r' (SELECT|FROM|LEFT|WHERE)', '\n\\1', query['sql']))
-                print()
-            print(96*'>')
-            print()
-
-            assert GENERATED_SQL == EXPECTED_SQL
-        ```
-- write SQL tests for nested queries, and also for permissions
 - Django view with GraphIQL
 - intercept `GraphQLError` (raised for required fields for instance)
 
 # DONE
 
+- check generated SQL in tests
+- write SQL tests for nested queries
+- write SQL tests for permissions
 - handle authentication from HTTP view, callback method, exposed model, tests
 - Django view
 - better exceptions

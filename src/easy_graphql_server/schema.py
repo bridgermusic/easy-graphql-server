@@ -42,6 +42,7 @@ class Schema:
         self.graphql_schema = None
         self.models_configs = []
         self.case_manager = casing.value
+        self.orm_model_manager_classes = []
 
     def get_documentation(self, with_descriptions=False):
         """
@@ -76,6 +77,9 @@ class Schema:
         self.dirty = True
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
+        orm_model_manager_class = model_config.orm_model_manager.__class__
+        if orm_model_manager_class not in self.orm_model_manager_classes:
+            self.orm_model_manager_classes.append(orm_model_manager_class)
 
     def execute(self, source, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
             authenticated_user=None,
