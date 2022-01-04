@@ -21,6 +21,11 @@ __all__ = (
     'JSONString'
 )
 
+# non-GraphQL wrapper type, to replace NonNull in wrappings
+
+class Mandatory:
+    def __init__(self, type_):
+        self.type_ = type_
 
 # native scalar types
 

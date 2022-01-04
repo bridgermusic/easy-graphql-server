@@ -4,12 +4,17 @@
 
 import django.db.models
 import django.db.transaction
-import django.contrib.postgres
+try:
+    import django.contrib.postgres.fields
+    postgres_support = True
+except ImportError:
+    postgres_support = False
 import django.core.exceptions
 
 from .. import types
 from .. import convert
 from .. import exceptions
+from ..operations import Operation
 from ._manager import ModelManager
 from ._fields import FieldsInfo, ForeignField, RelatedField
 
@@ -64,14 +69,18 @@ class DjangoModelManager(ModelManager):
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, graphql_path, graphql_selection=None, **data):
+    def create_one(self, authenticated_user, graphql_path, graphql_selection=None, **data):
         # related things
         related_data = {}
         for field_name in list(data.keys()):
             if field_name in self.fields_info.foreign:
-                data[field_name] = self._create_linked(
+                foreign_field = self.fields_info.foreign[field_name]
+                foreign_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                    orm_model = foreign_field.orm_model)
+                foreign_model_config.orm_model_manager.create_one(
+                    authenticated_user = authenticated_user,
                     graphql_path = graphql_path + [field_name],
-                    linked_data = data.pop(field_name))
+                    **data.pop(field_name))
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
         # instance itself
@@ -80,12 +89,16 @@ class DjangoModelManager(ModelManager):
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
-            for child_index, child_data in enumerate(children_data):
-                child_instance = self._create_linked(
-                    graphql_path = graphql_path + [child_index, field_name],
-                    linked_data = child_data,
-                    root_instance = instance)
-                getattr(instance, field_name).add(child_instance)
+            for related_index, related_data in enumerate(children_data):
+                related_field = self.fields_info.related[field_name]
+                related_data[related_field.value_field_name] = instance.pk
+                related_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                    orm_model = related_field.orm_model)
+                related_instance = related_model_config.orm_model_manager.create_one(
+                    authenticated_user = authenticated_user,
+                    graphql_path = graphql_path + [related_index, field_name],
+                    **related_data)
+                getattr(instance, field_name).add(related_instance)
         # validation
         try:
             instance.full_clean()
@@ -94,20 +107,43 @@ class DjangoModelManager(ModelManager):
         # result
         if graphql_selection is None:
             return instance
-        return self._instance_to_dict(instance, graphql_selection)
+        return self._instance_to_dict(
+            authenticated_user = authenticated_user,
+            instance = instance,
+            graphql_selection = graphql_selection,
+            graphql_path = graphql_path,
+            enforce_permissions = True,
+        )
 
-    def read_one(self, graphql_selection, **filters):
+    def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
         instance = self._read_one(graphql_selection, **filters)
-        return self._instance_to_dict(instance, graphql_selection)
+        return self._instance_to_dict(
+            authenticated_user = authenticated_user,
+            instance = instance,
+            graphql_selection = graphql_selection,
+            graphql_path = graphql_path,
+            enforce_permissions = True,
+        )
 
-    def read_many(self, graphql_selection, **filters):
+    def read_many(self, authenticated_user, graphql_path, graphql_selection, **filters):
         return [
-            self._instance_to_dict(instance, graphql_selection)
+            self._instance_to_dict(
+                authenticated_user = authenticated_user,
+                instance = instance,
+                graphql_selection = graphql_selection,
+                graphql_path = graphql_path,
+                enforce_permissions = False,
+            )
             for instance
             in self._read(graphql_selection, **filters).all()
+            if self.model_config.check_permissions(
+                operation = Operation.READ,
+                instance = instance,
+                authenticated_user = authenticated_user,
+            )
         ]
 
-    def update_one(self, graphql_path, graphql_selection=None, _=None, **filters):
+    def update_one(self, authenticated_user, graphql_path, graphql_selection=None, _=None, **filters):
         data = _ or {}
         # retrieve the instance to update
         instance = self._read_one(graphql_selection or {}, **filters)
@@ -126,11 +162,13 @@ class DjangoModelManager(ModelManager):
                     # if no identifier provided, create a new instance
                     if child_identifier is None:
                         data[field_name] = child_model_config.orm_model_manager.create_one(
+                            authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
                             **child_data)
                     # if identifier provided, update existing instance
                     else:
                         data[field_name] = child_model_config.orm_model_manager.update_one(
+                            authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
                             _ = child_data,
                             **{child_model_config.orm_model_manager.fields_info.primary:
@@ -156,11 +194,13 @@ class DjangoModelManager(ModelManager):
                 # create if no identifier provided
                 if child_identifier is None:
                     child_instance = child_model_config.orm_model_manager.create_one(
+                        authenticated_user = authenticated_user,
                         graphql_path = graphql_path + [child_index, field_name],
                         **dict({related_field.value_field_name: instance.pk}, **child_data))
                 # update if identifier provided
                 else:
                     child_instance = child_model_config.orm_model_manager.update_one(
+                        authenticated_user = authenticated_user,
                         graphql_path = graphql_path + [child_index, field_name],
                         _ = child_data,
                         **{child_model_config.orm_model_manager.fields_info.primary:
@@ -177,11 +217,25 @@ class DjangoModelManager(ModelManager):
         except django.core.exceptions.ValidationError as exception:
             self._reraise_validation_error(graphql_path, exception)
         # result
-        return instance
+        if graphql_selection is None:
+            return instance
+        return self._instance_to_dict(
+            authenticated_user = authenticated_user,
+            instance = instance,
+            graphql_selection = graphql_selection,
+            graphql_path = graphql_path,
+            enforce_permissions = True,
+        )
 
-    def delete_one(self, graphql_selection, **filters):
+    def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
         instance = self._read_one(graphql_selection, **filters)
-        result = self._instance_to_dict(instance, graphql_selection)
+        result = self._instance_to_dict(
+            authenticated_user = authenticated_user,
+            instance = instance,
+            graphql_selection = graphql_selection,
+            graphql_path = graphql_path,
+            enforce_permissions = True,
+        )
         instance.delete()
         return result
 
@@ -208,23 +262,45 @@ class DjangoModelManager(ModelManager):
         except django.core.exceptions.ObjectDoesNotExist as error:
             raise exceptions.NotFoundError(filters) from error
 
-    @classmethod
-    def _instance_to_dict(cls, instance, graphql_selection):
+    def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
+            enforce_permissions=True):
+        # enforce permissions when requested
+        if enforce_permissions:
+            self.model_config.enforce_permissions(
+                operation = Operation.READ,
+                instance = instance,
+                authenticated_user = authenticated_user,
+                graphql_path = graphql_path,
+            )
+        # build result
         result = {}
-        for key, graphql_subselection in graphql_selection.items():
-            value = getattr(instance, key)
-            # value field
+        for field_name, graphql_subselection in graphql_selection.items():
+            field_value = getattr(instance, field_name)
+            # field_value field
             if graphql_subselection is None:
-                result[key] = value
+                result[field_name] = field_value
             # related field
-            elif type(value).__name__ == 'RelatedManager':
-                result[key] = [
-                    cls._instance_to_dict(child_instance, graphql_subselection)
-                    for child_instance in value.all()
+            elif type(field_value).__name__ == 'RelatedManager':
+                result[field_name] = [
+                    self._instance_to_dict(
+                        authenticated_user = authenticated_user,
+                        instance = child_instance,
+                        graphql_selection = graphql_subselection,
+                        graphql_path = graphql_path + [field_name, child_index],
+                        enforce_permissions = False,
+                    )
+                    for child_index, child_instance
+                    in enumerate(field_value.all())
                 ]
             # foreign field
-            elif value is not None:
-                result[key] = cls._instance_to_dict(value, graphql_subselection)
+            elif field_value is not None:
+                result[field_name] = self._instance_to_dict(
+                    authenticated_user = authenticated_user,
+                    instance = field_value,
+                    graphql_selection = graphql_subselection,
+                    graphql_path = graphql_path + [field_name],
+                    enforce_permissions = True,
+                )
         return result
 
     def build_queryset(self, graphql_selection):
@@ -292,18 +368,6 @@ class DjangoModelManager(ModelManager):
         # return resulting queryset
         return base_queryset, only, prefetch_related, select_related
 
-    # helpers for creation
-
-    def _create_linked(self, graphql_path, linked_data, root_instance=None):
-        linked_field = self.fields_info.linked[graphql_path[-1]]
-        if isinstance(linked_field, RelatedField) and root_instance is not None:
-            linked_data[linked_field.value_field_name] = root_instance.pk
-        linked_model_config = self.model_config.schema.get_model_config_from_orm_model(
-            orm_model = linked_field.orm_model)
-        return linked_model_config.orm_model_manager.create_one(
-            graphql_path = graphql_path,
-            **linked_data)
-
     # validation error
 
     @staticmethod
@@ -321,7 +385,7 @@ class DjangoModelManager(ModelManager):
                         message %= error.params
                     yield {
                         'path': path + [field_name] if field_name else path,
-                        'message': message,
+                        'message': str(message),
                         'params': getattr(error, 'params', {}),
                         'code': getattr(error, 'code', None),
                     }
@@ -347,6 +411,7 @@ class DjangoModelManager(ModelManager):
         django.db.models.fields.CharField: types.String,
         django.db.models.fields.TextField: types.String,
         django.db.models.fields.URLField: types.String,
+        django.db.models.fields.EmailField: types.String,
         # date/time
         django.db.models.fields.DateField: types.Date,
         django.db.models.fields.DateTimeField: types.DateTime,
@@ -370,7 +435,7 @@ class DjangoModelManager(ModelManager):
         elif isinstance(field, tuple(cls.GRAPHQL_TYPES_MAPPING)):
             graphql_type = cls.GRAPHQL_TYPES_MAPPING[type(field)]
         # list
-        elif isinstance(field, django.contrib.postgres.fields.array.ArrayField):
+        elif postgres_support and isinstance(field, django.contrib.postgres.fields.array.ArrayField):
             graphql_type = types.List(cls._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:

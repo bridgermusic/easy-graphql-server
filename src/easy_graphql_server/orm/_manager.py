@@ -65,7 +65,7 @@ class ModelManager:
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, graphql_path, graphql_selection, **data):
+    def create_one(self, authenticated_user, graphql_path, graphql_selection, **data):
         """
             Create one instance of the given ORM model.
 
@@ -73,7 +73,7 @@ class ModelManager:
         """
         raise NotImplementedError()
 
-    def read_one(self, graphql_selection, **filters):
+    def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
         """
             Read one instance of the given ORM model.
 
@@ -81,7 +81,7 @@ class ModelManager:
         """
         raise NotImplementedError()
 
-    def read_many(self, graphql_selection, **filters):
+    def read_many(self, authenticated_user, graphql_path, graphql_selection, **filters):
         """
             Read many instance of the given ORM model.
 
@@ -89,7 +89,7 @@ class ModelManager:
         """
         raise NotImplementedError()
 
-    def update_one(self, graphql_path, graphql_selection, _=None, **filters):
+    def update_one(self, authenticated_user, graphql_path, graphql_selection, _=None, **filters):
         """
             Update one instance of the given ORM model.
 
@@ -97,7 +97,7 @@ class ModelManager:
         """
         raise NotImplementedError()
 
-    def delete_one(self, graphql_selection, **filters):
+    def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
         """
             Delete one instance of the given ORM model.
 

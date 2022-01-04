@@ -83,6 +83,11 @@ def to_graphql_type(type_, prefix, for_input=False):
         return types.List(
             to_graphql_type(type_[0], prefix, for_input=for_input)
         )
+    # mandatory
+    if isinstance(type_, types.Mandatory):
+        return types.NonNull(
+            to_graphql_type(type_.type_, prefix, for_input=for_input)
+        )
     # oops.
     raise ValueError(f'Could not convert {type_} to graphql type')
 

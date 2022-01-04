@@ -4,8 +4,9 @@
 
 from .operations import Operation
 from .convert import to_graphql_objecttype, to_graphql_argument
-from .types import List, NonNull
+from .types import List, Mandatory
 from .orm import ORM
+from . import exceptions
 
 
 class ModelConfig:
@@ -19,13 +20,17 @@ class ModelConfig:
 
     # pylint: disable=R0913 # Too many arguments
     def __init__(self, schema, orm_model, name=None, plural_name=None,
+            can_expose=True, cannot_expose=False,
             can_create=True, can_read=True, can_update=True, can_write=True, can_delete=True,
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
-            only_when_child_of=None):
+            only_when_child_of=None, force_authenticated_user=False,
+            ensure_permissions=None):
         # store raw options
         self.schema = schema
+        self.force_authenticated_user = force_authenticated_user
         self.only_when_child_of = only_when_child_of
+        self.ensure_permissions = ensure_permissions
         # name
         self.name = name or schema.case_manager.convert(orm_model.__name__)
         self.plural_name = plural_name or f'{self.name}s'
@@ -42,19 +47,19 @@ class ModelConfig:
         # what fields are exposed in which method
         self.concatenated_fields = {
             Operation.CREATE: self._concatenate_fields_options(
-                (can_write, can_create), True),
+                (can_expose, can_write, can_create), True),
             Operation.READ: self._concatenate_fields_options(
-                (can_read,), True),
+                (can_expose, can_read,), True),
             Operation.UPDATE: self._concatenate_fields_options(
-                (can_write, can_update), True),
+                (can_expose, can_write, can_update), True),
         }
         self.concatenated_exclude = {
             Operation.CREATE: self._concatenate_fields_options(
-                (cannot_write, cannot_create), False),
+                (cannot_expose, cannot_write, cannot_create), False),
             Operation.READ: self._concatenate_fields_options(
-                (cannot_read,), False),
+                (cannot_expose, cannot_read,), False),
             Operation.UPDATE: self._concatenate_fields_options(
-                (cannot_write, cannot_update), False),
+                (cannot_expose, cannot_write, cannot_update), False),
         }
         # instanciate ORM model manager
         self.orm_model_manager = ORM.get_manager(
@@ -90,8 +95,10 @@ class ModelConfig:
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.create_one),
-                pass_graphql_selection = True,
                 pass_graphql_path = True,
+                pass_graphql_selection = True,
+                pass_authenticated_user = True,
+                force_authenticated_user = self.force_authenticated_user,
             )
         # expose read methods
         if self.available_operations[Operation.READ]:
@@ -102,7 +109,10 @@ class ModelConfig:
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.read_one),
+                pass_graphql_path = True,
                 pass_graphql_selection = True,
+                pass_authenticated_user = True,
+                force_authenticated_user = self.force_authenticated_user,
             )
             # fetch many instances
             self.schema.expose_query(
@@ -111,7 +121,10 @@ class ModelConfig:
                 output_format = List(output_type),
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.read_many),
+                pass_graphql_path = True,
                 pass_graphql_selection = True,
+                pass_authenticated_user = True,
+                force_authenticated_user = self.force_authenticated_user,
             )
         # expose UPDATE method
         if self.available_operations[Operation.UPDATE]:
@@ -127,8 +140,10 @@ class ModelConfig:
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.update_one),
-                pass_graphql_selection = True,
                 pass_graphql_path = True,
+                pass_graphql_selection = True,
+                pass_authenticated_user = True,
+                force_authenticated_user = self.force_authenticated_user,
             )
         # expose delete method
         if self.available_operations[Operation.DELETE]:
@@ -139,7 +154,10 @@ class ModelConfig:
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.delete_one),
+                pass_graphql_path = True,
                 pass_graphql_selection = True,
+                pass_authenticated_user = True,
+                force_authenticated_user = self.force_authenticated_user,
             )
 
     # concatenate
@@ -219,7 +237,7 @@ class ModelConfig:
                 if field_name in fields_info.mandatory:
                     if linked_field is not None and field_name == linked_field.value_field_name:
                         continue
-                    mapping[field_name] = NonNull(graphql_type)
+                    mapping[field_name] = Mandatory(graphql_type)
         # result
         return mapping
 
@@ -262,3 +280,39 @@ class ModelConfig:
         if not self.only_when_child_of:
             return True
         return issubclass(orm_model, self.only_when_child_of)
+
+    def check_permissions(self, operation, instance, authenticated_user=None, data=None):
+        """
+            Returns a `bool` indicating whether or not the requested operation can
+            be performed on the instance.
+
+            `data` is provided when the operation is either `Operation.CREATE` or
+            `Operation.UPDATE`. It is a dictionary containing the new provided data
+            for the instance.
+        """
+        if hasattr(instance, 'ensure_permissions'):
+            if not instance.ensure_permissions(authenticated_user, operation, data):
+                return False
+        if self.ensure_permissions:
+            if not self.ensure_permissions(instance, authenticated_user, operation, data):
+                return False
+        return True
+
+    def enforce_permissions(self, operation, instance, authenticated_user, data=None, graphql_path=None):
+        """
+            Raise an `exceptions.ForbiddenError` when `check_permissions()` returns
+            `False` with the same parameters.
+
+            The `graphql_path` parameter indicates where the permission was denied.
+        """
+        permitted = self.check_permissions(
+            operation = operation,
+            instance = instance,
+            authenticated_user = authenticated_user,
+            data = data)
+        if not permitted:
+            raise exceptions.ForbiddenError(
+                operation = operation,
+                authenticated_user = authenticated_user,
+                path = graphql_path,
+            )

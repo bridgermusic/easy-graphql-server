@@ -2,6 +2,8 @@ import os
 import json
 
 import django.test
+import django.contrib.auth
+from django.conf import settings
 
 from easy_graphql_server.testing import make_tests_loader
 
@@ -14,28 +16,54 @@ TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 ENDPOINT_URL = '/graphql'
 
 
-class TestCase(django.test.TransactionTestCase):
+class BaseTestCase(django.test.TransactionTestCase):
     reset_sequences = True
     databases = ['default']
 
     def setUp(self):
         self.tearDown()
 
+    def get_or_create_user(self, username):
+        data = {'username': username}
+        if 'staff' in username:
+            data['is_staff'] = True
+        if 'admin' in username:
+            data['is_superuser'] = True
+        user_model = django.contrib.auth.get_user_model()
+        try:
+            user = user_model.objects.get(username = username)
+        except user_model.DoesNotExist:
+            user, created = django.contrib.auth.get_user_model().objects.get_or_create(**data)
+            user.set_password(settings.DEFAULT_USER_PASSWORD)
+            user.save()
+        return user
 
-class DjangoGraphqlHttpTest(TestCase):
+
+load_tests = make_tests_loader(
+    schema = schema,
+    path = TESTS_PATH,
+    base_test_class = BaseTestCase,
+)
+
+
+class DjangoGraphqlHttpTest(BaseTestCase):
 
     def setUp(self):
-        self.tearDown()
+        BaseTestCase.setUp(self)
         populate_database()
 
-    @staticmethod
-    def get_http_client():
+    def get_http_client(self, username = None):
         http_client = django.test.Client(HTTP_USER_AGENT='Mozilla/5.0')
+        if username is not None:
+            self.get_or_create_user(username)
+            http_client.login(
+                username = username,
+                password = settings.DEFAULT_USER_PASSWORD
+            )
         return http_client
 
-    @classmethod
-    def request_graphql_endpoint(cls, data):
-        return cls.get_http_client().post(
+    def request_graphql_endpoint(self, data, username=None):
+        return self.get_http_client(username = username).post(
             path = ENDPOINT_URL,
             data = json.dumps(data),
             content_type = 'application/json',
@@ -86,8 +114,49 @@ class DjangoGraphqlHttpTest(TestCase):
                 {'first_name': 'David', 'last_name': 'Nichols'}
         }})
 
-load_tests = make_tests_loader(
-    schema = schema,
-    path = TESTS_PATH,
-    base_test_class = TestCase,
-)
+    def test_authentication(self):
+        # regular user
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                    is_superuser
+                    is_staff
+                }
+            }
+        '''}, username='test@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 457, 'username': 'test@example.com', 'is_staff': False, 'is_superuser': False}
+        }, 'errors': None})
+        # staff user
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                    is_superuser
+                    is_staff
+                }
+            }
+        '''}, username='staff@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 458, 'username': 'staff@example.com', 'is_staff': True, 'is_superuser': False}
+        }, 'errors': None})
+        # super user
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                    is_superuser
+                    is_staff
+                }
+            }
+        '''}, username='admin@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {
+            'id': 459, 'username': 'admin@example.com', 'is_staff': False, 'is_superuser': True}
+        }, 'errors': None})

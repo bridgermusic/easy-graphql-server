@@ -1,9 +1,8 @@
 # TODO
 
 - `case_manager` in Schema
-- `authenticated_user`
 - use description from Django fields
-- subscriptions
+- handle GraphQL subscriptions
 - check generated SQL in tests:
         ```python
 
@@ -25,10 +24,13 @@
 
             assert GENERATED_SQL == EXPECTED_SQL
         ```
+- write SQL tests for nested queries, and also for permissions
 - Django view with GraphIQL
+- intercept `GraphQLError` (raised for required fields for instance)
 
 # DONE
 
+- handle authentication from HTTP view, callback method, exposed model, tests
 - Django view
 - better exceptions
 - `TestCase.databases = ['default']` shouldn't be necessary in `testing`

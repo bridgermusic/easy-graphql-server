@@ -8,6 +8,7 @@ mutation {
 
 mutation {
   create_person (
+    username: "john.doe@example.com"
     first_name: "John"
     last_name: "Doe"
     birth_date: "2001-01-01"
@@ -53,7 +54,11 @@ mutation {
   update_house (
     id: 2
     _: {
-      owner: {first_name: "Beth", last_name: "Doe"}
+      owner: {
+        username: "beth.doe@example.com"
+        first_name: "Beth",
+        last_name: "Doe"
+      }
     }
   ) {
     id
