@@ -75,7 +75,7 @@ class Schema:
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
 
-    def execute(self, source, variables=None, serializable_output=False):
+    def execute(self, source, variables=None, operation_name=None, serializable_output=False):
         """
             Execute a GraphQL query within the schema.
         """
@@ -83,6 +83,7 @@ class Schema:
             schema = self._get_graphql_schema(),
             source = source,
             variable_values = variables or {},
+            operation_name = operation_name,
         )
         if serializable_output:
             return result.formatted
@@ -107,6 +108,25 @@ class Schema:
             if model_config.orm_model_manager.orm_model == orm_model:
                 return model_config
         return None
+
+    def as_django_view(self):
+        """
+            Expose schema as a django view.
+
+            Example:
+
+            ```python
+            from django.urls import path
+            import easy_graphql_server
+
+            schema = easy_graphql_server.Schema()
+
+            urlpatterns = [
+                path('graphql', schema.as_django_view()),
+            ]
+            ```
+        """
+        return self._django_view
 
     # private methods
 
@@ -221,3 +241,55 @@ class Schema:
                 if selection.selection_set else None)
             for selection in selection_set.selections
         }
+
+    # HTTP views
+
+    def _django_view(self, request):
+        # pylint: disable=C0415 # Import outside toplevel
+        from django.http import JsonResponse
+        # check method
+        if request.method != 'POST':
+            return JsonResponse({'errors': [{'message':
+                'Method not allowed, only POST is supported',
+            }]}, status=405)
+        # input should be a JSON object
+        try:
+            data = json.loads(request.body)
+        except json.decoder.JSONDecodeError as error:
+            return JsonResponse({'errors': [{'message':
+                f'HTTP request body is not valid JSON: {error}',
+            }]}, status=400)
+        # input should be a JSON object
+        if not isinstance(data, dict):
+            return JsonResponse({'errors': [{'message':
+                'HTTP request body should be formatted as a JSON object',
+            }]}, status=400)
+        # extract & validate string query
+        query = data.get('query')
+        if not isinstance(query, str):
+            return JsonResponse({'errors': [{'message':
+                'In HTTP request body JSON object, '
+                'mandatory parameter "query" should be a string',
+            }]}, status=400)
+        # extract & validate variables mapping
+        variables = data.get('variables', {})
+        if not isinstance(variables, dict):
+            return JsonResponse({'errors': [{'message':
+                'In HTTP request body JSON object, '
+                'optional parameter "variables" should be an object',
+            }]}, status=400)
+        # extract & validate string query
+        operation_name = data.get('operationName', None)
+        if operation_name is not None and not isinstance(operation_name, str):
+            return JsonResponse({'errors': [{'message':
+                'In HTTP request body JSON object, '
+                'optional parameter "operationName" should be a string',
+            }]})
+        # compute & return result
+        result = self.execute(
+            source = query,
+            variables = variables,
+            operation_name = operation_name,
+            serializable_output = True,
+        )
+        return JsonResponse(result)

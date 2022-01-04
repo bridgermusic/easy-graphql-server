@@ -3,7 +3,6 @@
 - `case_manager` in Schema
 - `authenticated_user`
 - use description from Django fields
-- views (see graphiql also)
 - subscriptions
 - check generated SQL in tests:
         ```python
@@ -26,9 +25,11 @@
 
             assert GENERATED_SQL == EXPECTED_SQL
         ```
+- Django view with GraphIQL
 
 # DONE
 
+- Django view
 - better exceptions
 - `TestCase.databases = ['default']` shouldn't be necessary in `testing`
 - `NonNull` for mandatory input fields
@@ -36,3 +37,4 @@
 - model update
 - transactions
 - `ModelConfig.only_when_child_of` should do something
+- added publication tool
