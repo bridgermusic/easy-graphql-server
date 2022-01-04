@@ -2,6 +2,7 @@ import os
 import json
 
 import django.test
+import django.contrib.auth
 
 from easy_graphql_server.testing import make_tests_loader
 
@@ -12,6 +13,7 @@ from .schemas.django.models import populate_database
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')
 TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 ENDPOINT_URL = '/graphql'
+DEFAULT_USER_PASSWORD = '123456'
 
 
 class TestCase(django.test.TransactionTestCase):
@@ -29,13 +31,20 @@ class DjangoGraphqlHttpTest(TestCase):
         populate_database()
 
     @staticmethod
-    def get_http_client():
+    def get_http_client(username = None):
         http_client = django.test.Client(HTTP_USER_AGENT='Mozilla/5.0')
+        if username is not None:
+            # create user
+            user, created = django.contrib.auth.get_user_model().objects.get_or_create(username=username)
+            user.set_password(DEFAULT_USER_PASSWORD)
+            user.save()
+            # login user
+            http_client.login(username=username, password=DEFAULT_USER_PASSWORD)
         return http_client
 
     @classmethod
-    def request_graphql_endpoint(cls, data):
-        return cls.get_http_client().post(
+    def request_graphql_endpoint(cls, data, username=None):
+        return cls.get_http_client(username = username).post(
             path = ENDPOINT_URL,
             data = json.dumps(data),
             content_type = 'application/json',
@@ -85,6 +94,18 @@ class DjangoGraphqlHttpTest(TestCase):
             'person':
                 {'first_name': 'David', 'last_name': 'Nichols'}
         }})
+
+    def test_authentication(self):
+        response = self.request_graphql_endpoint({'query': '''
+            query {
+                me {
+                    id
+                    username
+                }
+            }
+        '''}, username='test@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'data': {'me': {'id': 1, 'username': 'test@example.com'}}, 'errors': None})
 
 load_tests = make_tests_loader(
     schema = schema,

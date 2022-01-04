@@ -17,6 +17,7 @@ from . import exceptions
 from .convert import to_graphql_type, to_graphql_argument
 from .model_config import ModelConfig
 from .casing import Casing
+from .context import ContextValue
 
 
 class Schema:
@@ -46,7 +47,8 @@ class Schema:
         """
             Return GraphQL schema description in JSON format.
         """
-        result = self.execute(get_introspection_query(descriptions=with_descriptions))
+        result = self.execute(
+            get_introspection_query(descriptions=with_descriptions))
         return json.dumps(result.data, indent=2)
 
     def expose_query(self, **options):
@@ -75,7 +77,9 @@ class Schema:
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
 
-    def execute(self, source, variables=None, operation_name=None, serializable_output=False):
+    def execute(self, source, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
+            authenticated_user=None,
+            serializable_output=False):
         """
             Execute a GraphQL query within the schema.
         """
@@ -84,6 +88,9 @@ class Schema:
             source = source,
             variable_values = variables or {},
             operation_name = operation_name,
+            context_value = ContextValue(
+                authenticated_user = authenticated_user,
+            ),
         )
         if serializable_output:
             return result.formatted
@@ -130,20 +137,23 @@ class Schema:
 
     # private methods
 
-    def _expose_method(self, type_, name, input_format, output_format, method, # pylint: disable=R0913 # Too many arguments
-            pass_graphql_selection=False, pass_graphql_path=False):
-        self.dirty = True
+    def _expose_method(self, type_, name, method, input_format=None, output_format=None, # pylint: disable=R0913 # Too many arguments
+            pass_graphql_selection=False, pass_graphql_path=False,
+            pass_authenticated_user=False, force_authenticated_user=False):
         # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
         self.methods[type_][name] = GraphQLField(
+            # output format
             type_ = to_graphql_type(
                 type_ = output_format,
                 prefix = name,
                 for_input = False,
-            ),
+            ) if output_format else None,
+            # input format
             args = to_graphql_argument(
                 type_ = input_format,
                 prefix = name,
-            ),
+            ) if input_format else None,
+            # resolve method
             resolve = self._make_callback(
                 type_ = type_,
                 method = method,
@@ -156,9 +166,17 @@ class Schema:
                     'graphql_path'
                     if pass_graphql_path is True else
                     pass_graphql_path
-                )
+                ),
+                pass_authenticated_user = (
+                    'authenticated_user'
+                    if pass_authenticated_user is True else
+                    pass_authenticated_user
+                ),
+                force_authenticated_user = force_authenticated_user,
             ),
         )
+        # schema is not up to date anymore
+        self.dirty = True
 
     def _get_graphql_schema(self):
         if self.dirty:
@@ -174,7 +192,9 @@ class Schema:
             self.dirty = False
         return self.graphql_schema
 
-    def _make_callback(self, type_, method, pass_graphql_selection, pass_graphql_path):
+    def _make_callback(self, type_, method, # pylint: disable=R0913 # Too many arguments
+            pass_graphql_selection, pass_graphql_path,
+            pass_authenticated_user, force_authenticated_user):
         def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
             try:
                 if pass_graphql_selection:
@@ -182,6 +202,11 @@ class Schema:
                         info.field_nodes[0].selection_set)
                 if pass_graphql_path:
                     kwargs[pass_graphql_path] = [type_, info.path.key]
+                authenticated_user = info.context.authenticated_user
+                if force_authenticated_user and not authenticated_user:
+                    raise exceptions.UnauthenticatedError()
+                if pass_authenticated_user:
+                    kwargs[pass_authenticated_user] = authenticated_user
                 return method(**kwargs)
             except exceptions.BaseError:
                 raise
@@ -285,11 +310,17 @@ class Schema:
                 'In HTTP request body JSON object, '
                 'optional parameter "operationName" should be a string',
             }]}, status=400)
+        # extract user
+        if request.user and request.user.is_authenticated and not request.user.is_anonymous:
+            authenticated_user = request.user
+        else:
+            authenticated_user = None
         # compute & return result
         result = self.execute(
             source = query,
             variables = variables,
             operation_name = operation_name,
+            authenticated_user = authenticated_user,
             serializable_output = True,
         )
         return JsonResponse(result)

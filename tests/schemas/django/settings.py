@@ -16,6 +16,12 @@ INSTALLED_APPS = [
     'tests.schemas.django',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.sessions',
+]
+
+MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'tests.schemas.django.urls'
