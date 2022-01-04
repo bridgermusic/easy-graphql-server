@@ -7,7 +7,6 @@ import re
 import json
 import importlib.util
 import unittest
-import sqlparse
 
 
 DefaultBaseTestCase = unittest.TestCase
@@ -113,9 +112,8 @@ def generate_testcase(schema, graphql_path,
                     self.assertEqual(json_, json_result)
                 except:
                     # if different, show pretty output and re-raise assert exception
-                    json_path = self._replace_extension(graphql_path, 'json')
                     self.show_diff(
-                        path = self._replace_extension(graphql_path, "json"),
+                        path = self._replace_extension(graphql_path, 'json'),
                         index = index,
                         expectation = json.dumps(json_, indent=2),
                         reality = json.dumps(json_result, indent=2)

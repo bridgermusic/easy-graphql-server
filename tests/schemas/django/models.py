@@ -111,6 +111,14 @@ class BankAccount(models.Model):
             return True
         return self.owner_id == authenticated_user.id
 
+    @classmethod
+    def filter_permitted(cls, authenticated_user):
+        if not authenticated_user:
+            return cls.objects.none()
+        if authenticated_user.is_superuser:
+            return cls.objects
+        return cls.objects.filter(owner_id = authenticated_user.id)
+
 
 def populate_database(random_seed=1985, houses_count=123, people_count=456, max_houses_count_per_person=5, bank_accounts_count=789):
 
