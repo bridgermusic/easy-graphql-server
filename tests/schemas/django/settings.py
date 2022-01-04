@@ -19,3 +19,5 @@ INSTALLED_APPS = [
 ]
 
 ROOT_URLCONF = 'tests.schemas.django.urls'
+
+SECRET_KEY = 'SecretKeySoThatTestsCanBePerformedOnHttpRequests'
