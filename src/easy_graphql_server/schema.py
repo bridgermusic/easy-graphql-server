@@ -4,7 +4,6 @@
 """
 
 import inspect
-import json
 from collections import defaultdict
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
@@ -75,7 +74,7 @@ class Schema:
         """
         result = self.execute(
             get_introspection_query(descriptions=with_descriptions))
-        return json.dumps(result.data, indent=2)
+        return result.data
 
     def expose(self, cls):
         """
@@ -163,7 +162,7 @@ class Schema:
 
     def as_django_view(self):
         """
-            Expose schema as a django view.
+            Expose schema as a Django view.
 
             Example:
 
@@ -178,7 +177,8 @@ class Schema:
             ]
             ```
         """
-        return self._django_view
+        from .webserver.django_schema_view import DjangoSchemaView
+        return DjangoSchemaView(schema=self).view
 
     # private attributes & methods
 
@@ -368,61 +368,3 @@ class Schema:
                 if selection.selection_set else None)
             for selection in selection_set.selections
         }
-
-    # HTTP views
-
-    def _django_view(self, request):
-        # pylint: disable=C0415 # Import outside toplevel
-        from django.http import JsonResponse
-        # check method
-        if request.method != 'POST':
-            return JsonResponse({'errors': [{'message':
-                'Method not allowed, only POST is supported',
-            }]}, status=405)
-        # input should be a JSON object
-        try:
-            data = json.loads(request.body)
-        except json.decoder.JSONDecodeError as error:
-            return JsonResponse({'errors': [{'message':
-                f'HTTP request body is not valid JSON: {error}',
-            }]}, status=400)
-        # input should be a JSON object
-        if not isinstance(data, dict):
-            return JsonResponse({'errors': [{'message':
-                'HTTP request body should be formatted as a JSON object',
-            }]}, status=400)
-        # extract & validate string query
-        query = data.get('query')
-        if not isinstance(query, str):
-            return JsonResponse({'errors': [{'message':
-                'In HTTP request body JSON object, '
-                'mandatory parameter "query" should be a string',
-            }]}, status=400)
-        # extract & validate variables mapping
-        variables = data.get('variables', {})
-        if not isinstance(variables, dict):
-            return JsonResponse({'errors': [{'message':
-                'In HTTP request body JSON object, '
-                'optional parameter "variables" should be an object',
-            }]}, status=400)
-        # extract & validate string query
-        operation_name = data.get('operationName', None)
-        if operation_name is not None and not isinstance(operation_name, str):
-            return JsonResponse({'errors': [{'message':
-                'In HTTP request body JSON object, '
-                'optional parameter "operationName" should be a string',
-            }]}, status=400)
-        # extract user
-        if request.user and request.user.is_authenticated and not request.user.is_anonymous:
-            authenticated_user = request.user
-        else:
-            authenticated_user = None
-        # compute & return result
-        result = self.execute(
-            source = query,
-            variables = variables,
-            operation_name = operation_name,
-            authenticated_user = authenticated_user,
-            serializable_output = True,
-        )
-        return JsonResponse(result)

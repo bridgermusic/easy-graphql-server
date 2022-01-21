@@ -1,4 +1,5 @@
 import os
+import pathlib
 import json
 
 import django.test
@@ -52,7 +53,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         BaseTestCase.setUp(self)
         populate_database()
 
-    def get_http_client(self, username = None):
+    def _get_http_client(self, username = None):
         http_client = django.test.Client(HTTP_USER_AGENT='Mozilla/5.0')
         if username is not None:
             self.get_or_create_user(username)
@@ -62,33 +63,33 @@ class DjangoGraphqlHttpTest(BaseTestCase):
             )
         return http_client
 
-    def request_graphql_endpoint(self, data, username=None):
-        return self.get_http_client(username = username).post(
+    def _request_graphql_endpoint(self, data, username=None):
+        return self._get_http_client(username = username).post(
             path = ENDPOINT_URL,
             data = json.dumps(data),
             content_type = 'application/json',
         )
 
     def test_endpoint(self):
-        http_client = self.get_http_client()
+        http_client = self._get_http_client()
         # ensure only POST method can be performed
-        for method in ('get', 'delete', 'patch', 'put'):
+        for method in ('delete', 'patch', 'put'):
             response = getattr(http_client, method)(ENDPOINT_URL)
             self.assertEqual(response.status_code, 405)
         # try to send empty request body
         response = http_client.post(ENDPOINT_URL, )
         self.assertEqual(response.status_code, 400)
         # try to send properly formatted JSON, with wrong data in it
-        response = self.request_graphql_endpoint({})
+        response = self._request_graphql_endpoint({})
         self.assertEqual(response.status_code, 400)
-        response = self.request_graphql_endpoint({'query': []})
+        response = self._request_graphql_endpoint({'query': []})
         self.assertEqual(response.status_code, 400)
         # try to send an empty query
-        response = self.request_graphql_endpoint({'query': ''})
+        response = self._request_graphql_endpoint({'query': ''})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['errors'][0]['message'], 'Syntax Error: Unexpected <EOF>.')
         # try to send a proper query
-        response = self.request_graphql_endpoint({'query': '''
+        response = self._request_graphql_endpoint({'query': '''
             query {
                 person (id: 1) {
                     first_name
@@ -102,6 +103,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
             }
         '''})
         self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers['Content-Type'].startswith('application/json'))
         self.assertEqual(response.json(), {'errors': None, 'data': {
             'people': [
                 {'first_name': 'Karen', 'id': 177, 'last_name': 'Evans'},
@@ -116,7 +118,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
 
     def test_authentication(self):
         # regular user
-        response = self.request_graphql_endpoint({'query': '''
+        response = self._request_graphql_endpoint({'query': '''
             query {
                 me {
                     id
@@ -131,7 +133,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
             'id': 457, 'username': 'test@example.com', 'is_staff': False, 'is_superuser': False}
         }, 'errors': None})
         # staff user
-        response = self.request_graphql_endpoint({'query': '''
+        response = self._request_graphql_endpoint({'query': '''
             query {
                 me {
                     id
@@ -146,7 +148,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
             'id': 458, 'username': 'staff@example.com', 'is_staff': True, 'is_superuser': False}
         }, 'errors': None})
         # super user
-        response = self.request_graphql_endpoint({'query': '''
+        response = self._request_graphql_endpoint({'query': '''
             query {
                 me {
                     id
@@ -160,3 +162,14 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         self.assertEqual(response.json(), {'data': {'me': {
             'id': 459, 'username': 'admin@example.com', 'is_staff': False, 'is_superuser': True}
         }, 'errors': None})
+
+    def test_graphiql(self):
+        response = self._get_http_client().get(
+            path = ENDPOINT_URL,
+            content_type = 'application/json',
+            HTTP_ACCEPT = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers['Content-Type'].startswith('text/html'))
+        graphiql_page_path = pathlib.Path(__file__).parent.parent / 'src/easy_graphql_server/webserver/static/graphiql.html'
+        self.assertEqual(response.content.decode(), open(graphiql_page_path, 'rt').read())

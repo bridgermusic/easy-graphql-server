@@ -71,6 +71,9 @@ def generate_testcase(schema, graphql_path,
                 yield i, (user, graphql, json_, sql.strip())
         @staticmethod
         def show_diff(path, index, expectation, reality):
+            """
+                Show difference between expected and actual result.
+            """
             print(90 * '~')
             print(f'{path} : {index}')
             print(40 * '-' + ' EXPECTED ' + 40 * '-')
