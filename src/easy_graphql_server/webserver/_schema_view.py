@@ -2,13 +2,18 @@
     Definition of `SchemaView` class.
 """
 
+import re
+import os
 import json
+import pathlib
 
 
 class SchemaView:
 
     def __init__(self, schema):
         self.schema = schema
+        graphiql_page_path = pathlib.Path(__file__).parent / 'static/graphiql.html'
+        self.graphiql_page = open(graphiql_page_path, 'rt').read()
 
     @staticmethod
     def _is_graphiql_requested(headers):
@@ -33,7 +38,7 @@ class SchemaView:
         )
         json_priority = (
             len(accepted_content_types) - accepted_content_types.index('application/json')
-            if 'text/html' in accepted_content_types
+            if 'application/json' in accepted_content_types
             else 0
         )
         return (html_priority > json_priority)
@@ -54,7 +59,7 @@ class SchemaView:
                 }]}, 400
         elif method == 'GET':
             if self._is_graphiql_requested(headers):
-                raise NotImplementedError('GraphIQL will soon be implemented here')
+                return self.graphiql_page
             else:
                 try:
                     data = {

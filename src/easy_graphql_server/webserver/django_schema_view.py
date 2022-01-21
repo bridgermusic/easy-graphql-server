@@ -1,5 +1,5 @@
 import json
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from ._schema_view import SchemaView
 
 
@@ -20,4 +20,6 @@ class DjangoSchemaView(SchemaView):
             authenticated_user = authenticated_user,
         )
         # return response
+        if isinstance(result, str):
+            return HttpResponse(result)
         return JsonResponse(result[0], status=result[1])

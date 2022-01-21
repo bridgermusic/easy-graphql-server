@@ -1,6 +1,5 @@
 # TODO
 
-- Django view with GraphIQL
 - if there were no errors returned, the "errors" field should not be present on the response (see https://graphql.org/learn/serving-over-http/)
 - document options for `expose_method()` and `expose_model()`
 - allow custom fields for models (C, R, U, D)
@@ -13,6 +12,7 @@
 
 # DONE
 
+- views with GraphIQL
 - check generated SQL in tests
 - write SQL tests for nested queries
 - write SQL tests for permissions
