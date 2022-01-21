@@ -46,13 +46,27 @@ class Schema:
         self.graphql_schema = None
         self.models_configs = []
         self.case_manager = casing.value
-        # abstract parent class for ExposedQuery, ExposedMutation and ExposedModel
-        class Exposed(exposition.Exposed): pass
-        self.Exposed = Exposed
-        # derived abstract classes
-        self._make_class_attribute('ExposedQuery')
-        self._make_class_attribute('ExposedMutation')
-        self._make_class_attribute('ExposedModel')
+        # abstract parent classes
+        class Exposed(exposition.Exposed):
+            # pylint: disable=R0903 # Too few public methods
+            # pylint: disable=C0115 # Missing class docstring
+            pass
+        self.Exposed = Exposed # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        class ExposedModel(exposition.ExposedModel, self.Exposed):
+            # pylint: disable=R0903 # Too few public methods
+            # pylint: disable=C0115 # Missing class docstring
+            pass
+        self.ExposedModel = ExposedModel # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        class ExposedQuery(exposition.ExposedQuery, self.Exposed):
+            # pylint: disable=R0903 # Too few public methods
+            # pylint: disable=C0115 # Missing class docstring
+            pass
+        self.ExposedQuery = ExposedQuery # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        class ExposedMutation(exposition.ExposedMutation, self.Exposed):
+            # pylint: disable=R0903 # Too few public methods
+            # pylint: disable=C0115 # Missing class docstring
+            pass
+        self.ExposedMutation = ExposedMutation # pylint: disable=C0103 # doesn't conform to snake_case naming style
 
     def get_documentation(self, with_descriptions=False):
         """
@@ -68,11 +82,14 @@ class Schema:
             or `exposition.ExposedModel`
         """
         if not inspect.isclass(cls):
-            raise ValueError(f'Parameter to `expose()` method should be a class.')
-        if not issubclass(cls, (exposition.ExposedQuery, exposition.ExposedMutation, exposition.ExposedModel)):
+            raise ValueError('Parameter to `expose()` method should be a class, '
+                f'`{cls}` was given instead.')
+        accepted_parent_classes = (
+            exposition.ExposedQuery, exposition.ExposedMutation, exposition.ExposedModel)
+        if not issubclass(cls, accepted_parent_classes):
             raise ValueError('Parameter to `expose()` method should be a subclass of either '
-                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or `exposition.ExposedModel`, '
-                f'but `{cls}` was found instead')
+                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or '
+                f'`exposition.ExposedModel`, but `{cls}` was found instead')
         self.subclasses.append(cls)
 
     def expose_query(self, **options):
@@ -203,11 +220,6 @@ class Schema:
         # schema is not up to date anymore
         self.dirty = True
 
-    def _make_class_attribute(self, name):
-        class Cls(getattr(exposition, name), self.Exposed): pass
-        Cls.__qualname__ = Cls.__name__ = name
-        setattr(self, name, Cls)
-
     def _collect_from_classes(self):
         for subclass in introspection.get_subclasses(self.Exposed):
             if subclass not in (self.ExposedModel, self.ExposedQuery, self.ExposedMutation):
@@ -222,11 +234,13 @@ class Schema:
             elif issubclass(subclass, exposition.ExposedQuery):
                 parent_class = exposition.ExposedQuery
                 exposition_method = self.expose_query
-                arguments = introspection.get_method_arguments(self._expose_method, ('self', 'type_'))
+                arguments = introspection.get_method_arguments(
+                    self._expose_method, ('self', 'type_'))
             elif issubclass(subclass, exposition.ExposedMutation):
                 parent_class = exposition.ExposedMutation
                 exposition_method = self.expose_mutation
-                arguments = introspection.get_method_arguments(self._expose_method, ('self', 'type_'))
+                arguments = introspection.get_method_arguments(
+                    self._expose_method, ('self', 'type_'))
             else:
                 raise ValueError(f'Unrecognized class: {subclass}')
             # attributes validation

@@ -1,11 +1,24 @@
-class Exposed:
-    pass
+"""
+    Abstract classes for later subclassing and exposition
+"""
 
-class ExposedQuery(Exposed):
-    pass
 
-class ExposedMutation(Exposed):
-    pass
+class Exposed: # pylint: disable=R0903 # Too few public methods
+    """
+        Base class for `ExposedQuery`, `ExposedMutation` and `ExposedModel`
+    """
 
-class ExposedModel(Exposed):
-    pass
+class ExposedQuery(Exposed): # pylint: disable=R0903 # Too few public methods
+    """
+        Abstract base class for exposing a query
+    """
+
+class ExposedMutation(Exposed): # pylint: disable=R0903 # Too few public methods
+    """
+        Abstract base class for exposing a mutation
+    """
+
+class ExposedModel(Exposed): # pylint: disable=R0903 # Too few public methods
+    """
+        Abstract base class for exposing a model
+    """

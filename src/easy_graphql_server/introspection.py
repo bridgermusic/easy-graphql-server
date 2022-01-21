@@ -25,7 +25,7 @@ def get_method_arguments(method, exclude=None):
         Return the method's argument, associated with a boolean describing whether
         or not the given argument is required.
     """
-    signature = inspect.getargspec(method)
+    signature = inspect.getfullargspec(method)
     result = {
         arg: len(signature.args) - i > len(signature.defaults)
         for i, arg in enumerate(signature.args)

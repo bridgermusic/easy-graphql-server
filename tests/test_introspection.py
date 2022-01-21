@@ -7,22 +7,30 @@ from easy_graphql_server import introspection
 class IntrospectionTest(unittest.TestCase):
 
     @staticmethod
-    def method1(a, b, c=1, **kwargs): pass
+    def method1(a, b, c=1, **kwargs):
+        pass
 
     @classmethod
-    def method2(a, b, c=1, **kwargs): pass
+    def method2(a, b, c=1, **kwargs):
+        pass
 
-    def method3(a, b, c=1, **kwargs): pass
+    def method3(a, b, c=1, **kwargs):
+        pass
 
     class Klass:
         a = 4
         b = 12
-        def __init__(self, a, b, c=1): pass
-        def c(self, *args, **kwargs): pass
+        def __init__(self, a, b, c=1):
+            pass
+        def c(self, *args, **kwargs):
+            pass
 
-    class A(Klass): pass
-    class B(Klass): pass
-    class C(B): pass
+    class A(Klass):
+        pass
+    class B(Klass):
+        pass
+    class C(B):
+        pass
 
     def test_get_subclasses(self):
         subclasses = set(introspection.get_subclasses(self.Klass))
