@@ -2,8 +2,10 @@
     Definition of `DjangoModelManager` class.
 """
 
+import django.db
 import django.db.models
 import django.db.transaction
+from django.conf import settings
 try:
     import django.contrib.postgres.fields
     WITH_POSTGRES_SUPPORT = True
@@ -122,7 +124,11 @@ class DjangoModelManager(ModelManager):
         )
 
     def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
-        instance = self._read_one(graphql_selection, **filters)
+        instance = self._read_one(
+            graphql_selection = graphql_selection,
+            authenticated_user = authenticated_user,
+            **filters
+        )
         return self._instance_to_dict(
             authenticated_user = authenticated_user,
             instance = instance,
@@ -140,8 +146,11 @@ class DjangoModelManager(ModelManager):
                 graphql_path = graphql_path,
                 enforce_permissions = False,
             )
-            for instance
-            in self._read(graphql_selection, **filters).all()
+            for instance in self._read(
+                graphql_selection = graphql_selection,
+                authenticated_user = authenticated_user,
+                **filters
+            ).all()
             if self.model_config.check_permissions(
                 operation = Operation.READ,
                 instance = instance,
@@ -154,7 +163,11 @@ class DjangoModelManager(ModelManager):
         # variable that contains new data
         data = _ or {}
         # retrieve the instance to update
-        instance = self._read_one(graphql_selection or {}, **filters)
+        instance = self._read_one(
+            graphql_selection = graphql_selection or {},
+            authenticated_user = authenticated_user,
+            **filters
+        )
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -242,7 +255,11 @@ class DjangoModelManager(ModelManager):
         )
 
     def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
-        instance = self._read_one(graphql_selection, **filters)
+        instance = self._read_one(
+            graphql_selection = graphql_selection,
+            authenticated_user = authenticated_user,
+            **filters
+        )
         self.model_config.enforce_permissions(
             operation = Operation.DELETE,
             instance = instance,
@@ -273,12 +290,19 @@ class DjangoModelManager(ModelManager):
 
     # helpers for reading
 
-    def _read(self, graphql_selection, **filters):
-        return self.build_queryset(graphql_selection).filter(**filters)
+    def _read(self, graphql_selection, authenticated_user, **filters):
+        return self.build_queryset(
+            graphql_selection = graphql_selection,
+            authenticated_user = authenticated_user
+        ).filter(**filters)
 
-    def _read_one(self, graphql_selection, **filters):
+    def _read_one(self, graphql_selection, authenticated_user, **filters):
         try:
-            return self._read(graphql_selection, **filters).get()
+            return self._read(
+                graphql_selection = graphql_selection,
+                authenticated_user = authenticated_user,
+                **filters
+            ).get()
         except django.core.exceptions.ObjectDoesNotExist as error:
             raise exceptions.NotFoundError(filters) from error
 
@@ -323,20 +347,28 @@ class DjangoModelManager(ModelManager):
                 )
         return result
 
-    def build_queryset(self, graphql_selection):
+    def build_queryset(self, graphql_selection, authenticated_user):
         """
             Build queryset for given GraphQL selection
         """
-        base_queryset, only, prefetch_related, select_related = (
-            self.build_queryset_parts(graphql_selection)
+        only, prefetch_related, select_related = (
+            self.build_queryset_parts(
+                graphql_selection = graphql_selection,
+                authenticated_user = authenticated_user,
+            )
         )
+        if hasattr(self.orm_model, 'filter_permitted'):
+            base_queryset = self.orm_model.filter_permitted(authenticated_user)
+        else:
+            base_queryset = self.orm_model.objects
         return (base_queryset
             .only(*only)
             .prefetch_related(*prefetch_related)
             .select_related(*select_related)
         )
 
-    def build_queryset_parts(self, graphql_selection, field_prefix=''): # pylint: disable=R0914 # Too many local variables
+    def build_queryset_parts(self, graphql_selection, authenticated_user,
+            field_prefix=''): # pylint: disable=R0914 # Too many local variables
         """
             Build queryset parts for given GraphQL selection
 
@@ -348,7 +380,6 @@ class DjangoModelManager(ModelManager):
         """
         schema = self.model_config.schema
         # initialize result
-        base_queryset = self.orm_model.objects
         only = []
         prefetch_related = []
         select_related = []
@@ -365,9 +396,12 @@ class DjangoModelManager(ModelManager):
                 foreign_orm_model_manager = schema.get_model_config_from_orm_model(
                     foreign_field.orm_model).orm_model_manager
                 # pylint: disable=W0612 # Unused variable '_'
-                _, foreign_only, foreign_prefetch_related, foreign_select_related = (
+                foreign_only, foreign_prefetch_related, foreign_select_related = (
                     foreign_orm_model_manager.build_queryset_parts(
-                        graphql_subselection, f'{field_prefix}{field_name}__')
+                        graphql_selection = graphql_subselection,
+                        authenticated_user = authenticated_user,
+                        field_prefix = f'{field_prefix}{field_name}__'
+                    )
                 )
                 only += foreign_only
                 prefetch_related += foreign_prefetch_related
@@ -381,12 +415,14 @@ class DjangoModelManager(ModelManager):
                     django.db.models.Prefetch(
                         field_name,
                         queryset = related_model_config.orm_model_manager.build_queryset(
-                            dict({related_field.value_field_name: None}, **graphql_subselection)
+                            graphql_selection = dict({related_field.value_field_name: None},
+                                **graphql_subselection),
+                            authenticated_user = authenticated_user,
                         )
                     )
                 )
         # return resulting queryset
-        return base_queryset, only, prefetch_related, select_related
+        return only, prefetch_related, select_related
 
     # validation error
 
@@ -464,3 +500,17 @@ class DjangoModelManager(ModelManager):
             raise ValueError(f'Could not convert {field} to graphql type')
         # result
         return graphql_type
+
+    # SQL logging
+
+    @staticmethod
+    def start_sql_log():
+        settings.DEBUG = True
+        django.db.reset_queries()
+
+    @staticmethod
+    def get_sql_log():
+        return [
+            query['sql']
+            for query in list(django.db.connection.queries)
+        ]

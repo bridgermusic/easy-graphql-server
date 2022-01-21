@@ -1,3 +1,17 @@
+# USER: alicia.sutton@example.com
+
+query {
+  bank_accounts {
+    iban
+    owner {
+      id
+      username
+    }
+  }
+}
+
+;
+
 query {
   bank_account (id: 1) {
     iban
@@ -36,20 +50,6 @@ query {
 
 query {
   bank_account (id: 1) {
-    iban
-    owner {
-      id
-      username
-    }
-  }
-}
-
-;
-
-# USER: alicia.sutton@example.com
-
-query {
-  bank_accounts {
     iban
     owner {
       id
