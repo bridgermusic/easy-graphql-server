@@ -4,8 +4,7 @@
             "output_text": "haha",
             "output_number": 42.0
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -16,8 +15,7 @@
       "output_text": "haha",
       "output_number": 0
     }
-  },
-  "errors": null
+  }
 }
 
 ;

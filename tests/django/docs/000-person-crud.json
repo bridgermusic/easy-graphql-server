@@ -45,8 +45,7 @@
       "first_name": "Michel",
       "last_name": "Dupont"
     }
-  },
-  "errors": null
+  }
 }
 
 ;
@@ -58,8 +57,7 @@
             "first_name": "Michel",
             "last_name": "Dupont"
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -73,8 +71,7 @@
                 "last_name": "Dupont"
             }
         ]
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -124,8 +121,7 @@
         "update_person": {
             "first_name": "Jean-Michel"
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -137,8 +133,7 @@
             "first_name": "Jean-Michel",
             "last_name": "Dupont"
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -172,8 +167,7 @@
             "first_name": "Jean-Michel",
             "last_name": "Dupont"
         }
-    },
-    "errors": null
+    }
 }
 
 ;

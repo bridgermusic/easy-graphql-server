@@ -108,10 +108,13 @@ class SchemaView:
                 'Optional parameter "operationName" should be a string',
             }]}, 400
         # compute & return result
-        return self.schema.execute(
+        result = self.schema.execute(
             source = query,
             variables = variables,
             operation_name = operation_name,
             authenticated_user = authenticated_user,
             serializable_output = True,
-        ), 200
+        )
+        if 'errors' in result and result['errors'] is None:
+            result.pop('errors')
+        return result, 200

@@ -104,7 +104,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         '''})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.headers['Content-Type'].startswith('application/json'))
-        self.assertEqual(response.json(), {'errors': None, 'data': {
+        self.assertEqual(response.json(), {'data': {
             'people': [
                 {'first_name': 'Karen', 'id': 177, 'last_name': 'Evans'},
                 {'first_name': 'Lauren', 'id': 199, 'last_name': 'Pennington'},
@@ -131,7 +131,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'data': {'me': {
             'id': 457, 'username': 'test@example.com', 'is_staff': False, 'is_superuser': False}
-        }, 'errors': None})
+        }})
         # staff user
         response = self._request_graphql_endpoint({'query': '''
             query {
@@ -146,7 +146,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'data': {'me': {
             'id': 458, 'username': 'staff@example.com', 'is_staff': True, 'is_superuser': False}
-        }, 'errors': None})
+        }})
         # super user
         response = self._request_graphql_endpoint({'query': '''
             query {
@@ -161,7 +161,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'data': {'me': {
             'id': 459, 'username': 'admin@example.com', 'is_staff': False, 'is_superuser': True}
-        }, 'errors': None})
+        }})
 
     def test_graphiql(self):
         response = self._get_http_client().get(

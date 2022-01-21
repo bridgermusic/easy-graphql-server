@@ -44,8 +44,7 @@
         }
       }
     ]
-  },
-  "errors": null
+  }
 }
 
 ;
@@ -103,8 +102,7 @@
         "username": "alicia.sutton@example.com"
       }
     }
-  },
-  "errors": null
+  }
 }
 
 ;
@@ -118,6 +116,5 @@
         "username": "alicia.sutton@example.com"
       }
     }
-  },
-  "errors": null
+  }
 }

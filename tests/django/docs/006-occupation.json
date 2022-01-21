@@ -23,8 +23,7 @@
 {
   "data": {
     "people": []
-  },
-  "errors": null
+  }
 }
 
 ;
@@ -34,8 +33,7 @@
         "create_person": {
             "id": 1
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -68,8 +66,7 @@
                 ]
             }
         ]
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -137,8 +134,7 @@
         "update_person": {
             "id": 1
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -169,6 +165,5 @@
                 }
             ]
         }
-    },
-    "errors": null
+    }
 }

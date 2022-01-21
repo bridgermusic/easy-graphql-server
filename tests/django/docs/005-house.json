@@ -3,8 +3,7 @@
     "create_house": {
       "id": 1
     }
-  },
-  "errors": null
+  }
 }
 
 ;
@@ -22,8 +21,7 @@
                 }
             ]
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -51,8 +49,7 @@
                 }
             }
         ]
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -90,8 +87,7 @@
                 "last_name": "Doe"
             }
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -107,8 +103,7 @@
                 "last_name": "Doe"
             }
         }
-    },
-    "errors": null
+    }
 }
 
 ;
@@ -135,6 +130,5 @@
         "username": "beth.doe@example.com"
       }
     ]
-  },
-  "errors": null
+  }
 }
