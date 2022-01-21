@@ -40,7 +40,7 @@ class BaseTestCase(django.test.TransactionTestCase):
 
 
 load_tests = make_tests_loader(
-    schema = schema,
+    schemata = (schema, ),
     path = TESTS_PATH,
     base_test_class = BaseTestCase,
 )
