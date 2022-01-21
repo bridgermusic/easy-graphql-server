@@ -5,67 +5,67 @@
 """
 
 
-from .. import types
+from .. import graphql_types
 
 
 LOOKUPS = {
 
-    types.Boolean: {},
+    graphql_types.Boolean: {},
 
-    types.Int: {},
+    graphql_types.Int: {},
 
-    types.Float: {},
+    graphql_types.Float: {},
 
-    types.Decimal: {},
+    graphql_types.Decimal: {},
 
-    types.String: {
-        'iexact': types.String,
-        'contains': types.String,
-        'icontains': types.String,
-        'startswith': types.String,
-        'istartswith': types.String,
-        'endswith': types.String,
-        'iendswith': types.String,
-        'regex': types.String,
-        'iregex': types.String,
+    graphql_types.String: {
+        'iexact': graphql_types.String,
+        'contains': graphql_types.String,
+        'icontains': graphql_types.String,
+        'startswith': graphql_types.String,
+        'istartswith': graphql_types.String,
+        'endswith': graphql_types.String,
+        'iendswith': graphql_types.String,
+        'regex': graphql_types.String,
+        'iregex': graphql_types.String,
     },
 
-    types.DateTime: {
-        'date': types.Date,
-        'time': types.Time,
+    graphql_types.DateTime: {
+        'date': graphql_types.Date,
+        'time': graphql_types.Time,
     },
 
-    types.Date: {
-        'year': types.Int,
-        'iso_year': types.Int,
-        'quarter': types.Int,
-        'month': types.Int,
-        'week': types.Int,
-        'iso_week_day': types.Int,
-        'week_day': types.Int,
-        'day': types.Int,
+    graphql_types.Date: {
+        'year': graphql_types.Int,
+        'iso_year': graphql_types.Int,
+        'quarter': graphql_types.Int,
+        'month': graphql_types.Int,
+        'week': graphql_types.Int,
+        'iso_week_day': graphql_types.Int,
+        'week_day': graphql_types.Int,
+        'day': graphql_types.Int,
     },
 
-    types.Time: {
-        'hour': types.Int,
-        'minute': types.Int,
-        'second': types.Int,
+    graphql_types.Time: {
+        'hour': graphql_types.Int,
+        'minute': graphql_types.Int,
+        'second': graphql_types.Int,
     },
 
 }
 
 
-LOOKUPS[types.DateTime].update(LOOKUPS[types.Date])
-LOOKUPS[types.DateTime].update(LOOKUPS[types.Time])
+LOOKUPS[graphql_types.DateTime].update(LOOKUPS[graphql_types.Date])
+LOOKUPS[graphql_types.DateTime].update(LOOKUPS[graphql_types.Time])
 
 for graphql_type in list(LOOKUPS.keys()):
-    if graphql_type == types.Boolean:
+    if graphql_type == graphql_types.Boolean:
         continue
     LOOKUPS[graphql_type].update({
         'lt': graphql_type,
         'lte': graphql_type,
         'gt': graphql_type,
         'gte': graphql_type,
-        'in': types.List(graphql_type),
-        'isnull': types.Boolean,
+        'in': graphql_types.List(graphql_type),
+        'isnull': graphql_types.Boolean,
     })

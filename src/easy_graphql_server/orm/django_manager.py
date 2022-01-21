@@ -13,7 +13,7 @@ except ImportError:
     WITH_POSTGRES_SUPPORT = False
 import django.core.exceptions
 
-from .. import types
+from .. import graphql_types
 from .. import convert
 from .. import exceptions
 from ..operations import Operation
@@ -454,26 +454,26 @@ class DjangoModelManager(ModelManager):
 
     GRAPHQL_TYPES_MAPPING = {
         # boolean
-        django.db.models.fields.BooleanField: types.Boolean,
+        django.db.models.fields.BooleanField: graphql_types.Boolean,
         # integers
-        django.db.models.fields.AutoField: types.Int,
-        django.db.models.fields.IntegerField: types.Int,
-        django.db.models.fields.BigIntegerField: types.Int,
-        django.db.models.fields.SmallIntegerField: types.Int,
+        django.db.models.fields.AutoField: graphql_types.Int,
+        django.db.models.fields.IntegerField: graphql_types.Int,
+        django.db.models.fields.BigIntegerField: graphql_types.Int,
+        django.db.models.fields.SmallIntegerField: graphql_types.Int,
         # non-integer numbers
-        django.db.models.fields.FloatField: types.Float,
-        django.db.models.fields.DecimalField: types.Decimal,
+        django.db.models.fields.FloatField: graphql_types.Float,
+        django.db.models.fields.DecimalField: graphql_types.Decimal,
         # texts
-        django.db.models.fields.CharField: types.String,
-        django.db.models.fields.TextField: types.String,
-        django.db.models.fields.URLField: types.String,
-        django.db.models.fields.EmailField: types.String,
+        django.db.models.fields.CharField: graphql_types.String,
+        django.db.models.fields.TextField: graphql_types.String,
+        django.db.models.fields.URLField: graphql_types.String,
+        django.db.models.fields.EmailField: graphql_types.String,
         # date/time
-        django.db.models.fields.DateField: types.Date,
-        django.db.models.fields.DateTimeField: types.DateTime,
-        django.db.models.fields.TimeField: types.Time,
+        django.db.models.fields.DateField: graphql_types.Date,
+        django.db.models.fields.DateTimeField: graphql_types.DateTime,
+        django.db.models.fields.TimeField: graphql_types.Time,
         # other things
-        django.db.models.fields.json.JSONField: types.JSONString,
+        django.db.models.fields.json.JSONField: graphql_types.JSONString,
     }
 
     @classmethod
@@ -494,7 +494,7 @@ class DjangoModelManager(ModelManager):
         elif WITH_POSTGRES_SUPPORT:
             # array
             if isinstance(field, django.contrib.postgres.fields.array.ArrayField):
-                graphql_type = types.List(cls._to_graphql_type_from_field(field.base_field))
+                graphql_type = graphql_types.List(cls._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:
             raise ValueError(f'Could not convert {field} to graphql type')

@@ -177,6 +177,7 @@ class Schema:
             ]
             ```
         """
+        # pylint: disable=C0415 # Import outside toplevel
         from .webserver.django_schema_view import DjangoSchemaView
         return DjangoSchemaView(schema=self).view
 

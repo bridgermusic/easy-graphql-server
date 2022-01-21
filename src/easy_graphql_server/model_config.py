@@ -4,7 +4,7 @@
 
 from .operations import Operation
 from .convert import to_graphql_objecttype, to_graphql_argument
-from .types import List, Mandatory
+from .types import Mandatory
 from .orm import ORM
 from . import exceptions
 
@@ -118,7 +118,7 @@ class ModelConfig:
             self.schema.expose_query(
                 name = self.plural_name,
                 input_format = filters,
-                output_format = List(output_type),
+                output_format = [output_type],
                 method = self.orm_model_manager.decorate(
                     self.orm_model_manager.read_many),
                 pass_graphql_path = True,

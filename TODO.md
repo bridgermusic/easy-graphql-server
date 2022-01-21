@@ -3,7 +3,6 @@
 - if there were no errors returned, the "errors" field should not be present on the response (see https://graphql.org/learn/serving-over-http/)
 - document options for `expose_method()` and `expose_model()`
 - allow custom fields for models (C, R, U, D)
-- split `types.py` into `graphql_types.py` and `types.py`
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
@@ -12,6 +11,7 @@
 
 # DONE
 
+- split `types.py` into `graphql_types.py` and `types.py`
 - views with GraphIQL
 - check generated SQL in tests
 - write SQL tests for nested queries

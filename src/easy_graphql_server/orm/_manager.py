@@ -2,7 +2,7 @@
     Definition of `ModelManager` base class.
 """
 
-from .. import types
+from .. import graphql_types
 from ..operations import Operation
 from ._lookups import LOOKUPS
 
@@ -54,9 +54,10 @@ class ModelManager:
                 for lookup_name, lookup_graphql_type in LOOKUPS.get(graphql_type, {}).items():
                     filters[f'{prefixed_field_name}__{lookup_name}'] = lookup_graphql_type
                     # apply same filters as for integers on date/time parts
-                    if (graphql_type in (types.Date, types.DateTime, types.Time)
-                            and lookup_graphql_type == types.Int):
-                        int_lookups = LOOKUPS[types.Int]
+                    date_time_types = (
+                        graphql_types.Date, graphql_types.DateTime, graphql_types.Time)
+                    if graphql_type in date_time_types and lookup_graphql_type == graphql_types.Int:
+                        int_lookups = LOOKUPS[graphql_types.Int]
                         for int_lookup_name, int_lookup_graphql_type in int_lookups.items():
                             name = f'{prefixed_field_name}__{lookup_name}__{int_lookup_name}'
                             filters[name] = int_lookup_graphql_type

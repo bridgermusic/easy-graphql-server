@@ -16,23 +16,23 @@ from graphql import \
     GraphQLField, GraphQLArgument, \
     GraphQLObjectType, GraphQLInputObjectType
 
-from . import types
+from . import types, graphql_types
 
 
 PYTHON_GRAPHQL_TYPES_MAPPING = {
     # boolean
-    bool: types.Boolean,
+    bool: graphql_types.Boolean,
     # integers
-    int: types.Int,
+    int: graphql_types.Int,
     # other numbers
-    float: types.Float,
-    decimal.Decimal: types.Decimal,
+    float: graphql_types.Float,
+    decimal.Decimal: graphql_types.Decimal,
     # texts
-    str: types.String,
+    str: graphql_types.String,
     # date
-    datetime.date: types.Date,
-    datetime.datetime: types.DateTime,
-    datetime.time: types.Time,
+    datetime.date: graphql_types.Date,
+    datetime.datetime: graphql_types.DateTime,
+    datetime.time: graphql_types.Time,
 }
 
 
@@ -80,12 +80,12 @@ def to_graphql_type(type_, prefix, for_input=False):
             ])
     # list
     if isinstance(type_, list) and len(type_) == 1:
-        return types.List(
+        return graphql_types.List(
             to_graphql_type(type_[0], prefix, for_input=for_input)
         )
     # mandatory
     if isinstance(type_, types.Mandatory):
-        return types.NonNull(
+        return graphql_types.NonNull(
             to_graphql_type(type_.type_, prefix, for_input=for_input)
         )
     # oops.
