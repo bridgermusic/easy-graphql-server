@@ -133,7 +133,7 @@ def generate_testcases(schema, path, base_test_class=DefaultBaseTestCase):
     for gql_path in sorted(_get_gql_path_list(path)):
         yield generate_testcase(schema, gql_path, base_test_class)
 
-def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
+def make_tests_loader(schemata, path, base_test_class=DefaultBaseTestCase):
     """
         This method returns a `load_tests` method, useful for loading generated tests
         from a module.
@@ -151,9 +151,12 @@ def make_tests_loader(schema, path, base_test_class=DefaultBaseTestCase):
         load_tests = make_tests_loader(schema, 'path/to/graphql/test/data')
         ```
     """
+    if not isinstance(schemata, (tuple, list, set)):
+        schemata = [schemata]
     def load_tests(loader, tests, ignore): # pylint: disable=W0613 # Unused argument 'loader', 'ignore'
         path_ = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', path)
-        for test in generate_testcases(schema, path_, base_test_class):
-            tests.addTest(test)
+        for schema in schemata:
+            for test in generate_testcases(schema, path_, base_test_class):
+                tests.addTest(test)
         return tests
     return load_tests

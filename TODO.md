@@ -1,5 +1,6 @@
 # TODO
 
+- split `types.py` into `graphql_types.py` and `types.py`
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions

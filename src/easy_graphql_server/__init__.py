@@ -5,3 +5,4 @@
 from .types import *
 from .schema import Schema
 from .operations import Operation
+from .exposition import ExposedModel, ExposedQuery, ExposedMutation
