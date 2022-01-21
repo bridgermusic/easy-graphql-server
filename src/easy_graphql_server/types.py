@@ -14,6 +14,7 @@ from graphql.language.printer import print_ast
 
 
 __all__ = (
+    'Mandatory',
     'Boolean', 'Int', 'String', 'Float',
     'Decimal',
     'DateTime', 'Date', 'Time',

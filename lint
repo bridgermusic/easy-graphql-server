@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 PYTHONPATH=src pylint \
+  --fail-under=9.8 \
+  --fail-on=C0115 \
   --confidence=HIGH,INFERENCE,INFERENCE_FAILURE,UNDEFINED \
   --include-naming-hint y \
   easy_graphql_server \

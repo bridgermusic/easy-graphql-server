@@ -415,7 +415,8 @@ class DjangoModelManager(ModelManager):
                     django.db.models.Prefetch(
                         field_name,
                         queryset = related_model_config.orm_model_manager.build_queryset(
-                            graphql_selection = dict({related_field.value_field_name: None}, **graphql_subselection),
+                            graphql_selection = dict({related_field.value_field_name: None},
+                                **graphql_subselection),
                             authenticated_user = authenticated_user,
                         )
                     )

@@ -7,8 +7,8 @@ from django.conf import settings
 
 from easy_graphql_server.testing import make_tests_loader
 
-from .schemas.django.graphql import schema
-from .schemas.django.models import populate_database
+from .django import schema1, schema2, schema3
+from .django.models import populate_database
 
 
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')
@@ -40,7 +40,7 @@ class BaseTestCase(django.test.TransactionTestCase):
 
 
 load_tests = make_tests_loader(
-    schema = schema,
+    schemata = (schema1, schema2, schema3),
     path = TESTS_PATH,
     base_test_class = BaseTestCase,
 )

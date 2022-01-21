@@ -1,5 +1,8 @@
 # TODO
 
+- document options for `expose_method()` and `expose_model()`
+- allow custom fields for models (C, R, U, D)
+- split `types.py` into `graphql_types.py` and `types.py`
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
