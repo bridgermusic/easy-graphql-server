@@ -129,6 +129,8 @@ class BarMutation(schema.ExposedMutation):
 
 #### Subclassing `easy_graphql_server.ExposedQuery` and `easy_graphql_server.ExposedMutation`
 
+This is very similar to the previous way.
+
 ```python
 import easy_graphql_server as egs
 
@@ -196,11 +198,58 @@ force_authenticated_user=False
 
 #### Calling `Schema.expose_model()`
 
+```python
+import easy_graphql_server
+from my_django_application.models import Person
+
+schema = easy_graphql_server.Schema()
+
+schema.expose_model(
+	orm_model=Person,
+	plural_name='people',
+	can_expose=('id', 'first_name', 'last_name'),
+	cannot_write=('id',),
+)
+```
+
 #### Subclassing `Schema.ExposedModel`
+
+```python
+import easy_graphql_server
+from my_django_application.models import Person
+
+schema = easy_graphql_server.Schema()
+
+class ExposedPerson(schema.ExposedModel):
+		orm_model = Person
+		plural_name = 'people'
+		can_expose = ('id', 'first_name', 'last_name')
+		cannot_write = ('id',)
+```
+
+#### Subclassing `easy_graphql_server.ExposedModel`
+
+This is very similar to the previous way.
+
+```python
+import easy_graphql_server
+from my_django_application.models import Person
+
+schema = easy_graphql_server.Schema()
+
+class ExposedPerson(easy_graphql_server.ExposedModel):
+		orm_model = Person
+		plural_name = 'people'
+		can_expose = ('id', 'first_name', 'last_name')
+		cannot_write = ('id',)
+
+schema = easy_graphql_server.Schema()
+schema.expose(ExposedPerson)
+```
 
 #### Available options
 
-The same options can be passed either as class attributes for subclasses of `Schema.ExposedModel`, or as keyword arguments to `Schema.expose_model()` method.
+The same options can be passed either as class attributes for subclasses of `ExposedModel`, or as keyword arguments to `Schema.expose_model()` method.
 
 ### Perform GraphQL queries
 
