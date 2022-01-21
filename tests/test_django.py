@@ -72,7 +72,7 @@ class DjangoGraphqlHttpTest(BaseTestCase):
     def test_endpoint(self):
         http_client = self.get_http_client()
         # ensure only POST method can be performed
-        for method in ('get', 'delete', 'patch', 'put'):
+        for method in ('delete', 'patch', 'put'):
             response = getattr(http_client, method)(ENDPOINT_URL)
             self.assertEqual(response.status_code, 405)
         # try to send empty request body

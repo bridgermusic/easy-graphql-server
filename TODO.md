@@ -1,13 +1,15 @@
 # TODO
 
+- Django view with GraphIQL
+- if there were no errors returned, the "errors" field should not be present on the response (see https://graphql.org/learn/serving-over-http/)
 - document options for `expose_method()` and `expose_model()`
 - allow custom fields for models (C, R, U, D)
 - split `types.py` into `graphql_types.py` and `types.py`
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
-- Django view with GraphIQL
 - intercept `GraphQLError` (raised for required fields for instance)
+- rewrite `webserver._schema_view.SchemaView._is_graphiql_requested()` method
 
 # DONE
 
