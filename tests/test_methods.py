@@ -1,7 +1,7 @@
 import os
 from easy_graphql_server.testing import make_tests_loader
 
-from .schemas.methods import schema1, schema2, schema3
+from .methods import schema1, schema2, schema3
 
 
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/methods/docs')

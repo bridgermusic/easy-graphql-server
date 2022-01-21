@@ -7,8 +7,8 @@ from django.conf import settings
 
 from easy_graphql_server.testing import make_tests_loader
 
-from .schemas.django.graphql import schema
-from .schemas.django.models import populate_database
+from .django.graphql import schema
+from .django.models import populate_database
 
 
 DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')

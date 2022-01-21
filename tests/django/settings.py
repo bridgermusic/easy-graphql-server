@@ -15,7 +15,7 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
-    'tests.schemas.django',
+    'tests.django',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -26,7 +26,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
 
-ROOT_URLCONF = 'tests.schemas.django.urls'
+ROOT_URLCONF = 'tests.django.urls'
 
 SECRET_KEY = 'SecretKeySoThatTestsCanBePerformedOnHttpRequests'
 
