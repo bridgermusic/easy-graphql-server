@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .graphql import schema
+from .schema1 import schema
 
 
 urlpatterns = [
