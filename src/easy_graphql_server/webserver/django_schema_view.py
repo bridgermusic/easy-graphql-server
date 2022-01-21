@@ -1,11 +1,21 @@
-import json
+"""
+    Definition of `DjangoSchemaView` class
+"""
+
 from django.http import HttpResponse, JsonResponse
 from ._schema_view import SchemaView
 
 
 class DjangoSchemaView(SchemaView):
 
+    """
+        Django schema view. Used when calling `Schema.as_django_view()`.
+    """
+
     def view(self, request):
+        """
+            Django view to compute GraphQL request
+        """
         # extract user
         if request.user and request.user.is_authenticated and not request.user.is_anonymous:
             authenticated_user = request.user

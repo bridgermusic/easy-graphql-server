@@ -1,25 +1,34 @@
 """
-    Definition of `SchemaView` class.
+    Definition of base `SchemaView` class.
 """
 
 import re
-import os
 import json
 import pathlib
 
 
 class SchemaView:
+    # pylint: disable=R0903 # Too few public methods
 
-    def __init__(self, schema):
+    """
+        Django schema view. Base class for `DjangoSchemaView`.
+    """
+
+    def __init__(self, schema, with_graphiql=True):
         self.schema = schema
-        graphiql_page_path = pathlib.Path(__file__).parent / 'static/graphiql.html'
-        self.graphiql_page = open(graphiql_page_path, 'rt').read()
+        self.with_graphiql = with_graphiql
+        if with_graphiql:
+            graphiql_page_path = pathlib.Path(__file__).parent / 'static/graphiql.html'
+            with open(graphiql_page_path, 'rt', encoding='utf-8') as graphiql_page_file:
+                self.graphiql_page = graphiql_page_file.read()
 
-    @staticmethod
-    def _is_graphiql_requested(headers):
-        # taken from https://github.com/graphql-python/graphene-django/blob/e1a7d1983314174c91ede1ebbfe35a9009cf6268/graphene_django/views.py#L33
-        def qualify(x):
-            parts = x.split(';', 1)
+    def _must_serve_graphiql(self, headers):
+        if not self.with_graphiql:
+            return False
+        # taken from https://github.com/graphql-python/graphene-django/blob/
+        # e1a7d1983314174c91ede1ebbfe35a9009cf6268/graphene_django/views.py#L33
+        def qualify(content_type):
+            parts = content_type.split(';', 1)
             if len(parts) == 2:
                 match = re.match(r'(^|;)q=(0(\.\d{,3})?|1(\.0{,3})?)(;|$)', parts[1])
                 if match:
@@ -28,9 +37,12 @@ class SchemaView:
         raw_content_types = headers.get('Accept', '*/*').split(',')
         qualified_content_types = map(qualify, raw_content_types)
         accepted_content_types = [
-            x[0] for x in sorted(qualified_content_types, key=lambda x: x[1], reverse=True)
+            content_type[0]
+            for content_type in sorted(
+                qualified_content_types, key=lambda content_type: content_type[1], reverse=True)
         ]
-        # taken from https://github.com/graphql-python/graphene-django/blob/e1a7d1983314174c91ede1ebbfe35a9009cf6268/graphene_django/views.py#L351
+        # taken from https://github.com/graphql-python/graphene-django/blob/
+        # e1a7d1983314174c91ede1ebbfe35a9009cf6268/graphene_django/views.py#L351
         html_priority = (
             len(accepted_content_types) - accepted_content_types.index('text/html')
             if 'text/html' in accepted_content_types
@@ -41,9 +53,12 @@ class SchemaView:
             if 'application/json' in accepted_content_types
             else 0
         )
-        return (html_priority > json_priority)
+        return html_priority > json_priority
 
     def compute_response(self, method, headers, body, query, authenticated_user):
+        """
+            Compute response to be served by HTTP server.
+        """
         # data extraction
         if method == 'POST':
             # extract data from JSON payload
@@ -58,19 +73,18 @@ class SchemaView:
                     'HTTP request body should be formatted as a JSON object',
                 }]}, 400
         elif method == 'GET':
-            if self._is_graphiql_requested(headers):
+            if self._must_serve_graphiql(headers):
                 return self.graphiql_page
-            else:
-                try:
-                    data = {
-                        'query': query.get('operationName'),
-                        'variables': json.loads(query.get('variables', 'null')),
-                        'operationName': query.get('operationName'),
-                    }
-                except json.JSONDecodeError:
-                    return {'errors': [{'message':
-                        f'HTTP request body is not valid JSON: {error}',
-                    }]}, 400
+            try:
+                data = {
+                    'query': query.get('operationName'),
+                    'variables': json.loads(query.get('variables', 'null')),
+                    'operationName': query.get('operationName'),
+                }
+            except json.JSONDecodeError:
+                return {'errors': [{'message':
+                    f'Parameter `variables` is not valid JSON: {error}',
+                }]}, 400
         else:
             return {'errors': [{'message':
                 f'Method {method} not allowed, only GET and POST are supported',
