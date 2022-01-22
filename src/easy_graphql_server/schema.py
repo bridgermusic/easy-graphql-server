@@ -121,7 +121,7 @@ class Schema:
         if orm_model_manager_class not in self.orm_model_manager_classes:
             self.orm_model_manager_classes.append(orm_model_manager_class)
 
-    def execute(self, source, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
+    def execute(self, query, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
             authenticated_user=None,
             serializable_output=False):
         """
@@ -129,7 +129,7 @@ class Schema:
         """
         result = graphql_sync(
             schema = self._get_graphql_schema(),
-            source = source,
+            source = query,
             variable_values = variables or {},
             operation_name = operation_name,
             context_value = ContextValue(

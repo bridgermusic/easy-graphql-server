@@ -5,23 +5,22 @@
 <!-- TOC depthFrom:1 depthTo:6 withLinks:1 updateOnSave:1 orderedList:0 -->
 
 - [Easy GraphQL Server](#easy-graphql-server)
-	- [Installation](#installation)
 	- [Usage](#usage)
 		- [Expose methods](#expose-methods)
 			- [Calling `Schema.expose_query()` and `Schema.expose_mutation()`](#calling-schemaexposequery-and-schemaexposemutation)
 			- [Subclassing `Schema.ExposedQuery` and `Schema.ExposedMutation`](#subclassing-schemaexposedquery-and-schemaexposedmutation)
-			- [Available options](#available-options)
+			- [Subclassing `easy_graphql_server.ExposedQuery` and `easy_graphql_server.ExposedMutation`](#subclassing-easygraphqlserverexposedquery-and-easygraphqlserverexposedmutation)
+			- [Available options for exposing methods](#available-options-for-exposing-methods)
 		- [Expose ORM models](#expose-orm-models)
 			- [Calling `Schema.expose_model()`](#calling-schemaexposemodel)
 			- [Subclassing `Schema.ExposedModel`](#subclassing-schemaexposedmodel)
-			- [Available options](#available-options)
+			- [Subclassing `easy_graphql_server.ExposedModel`](#subclassing-easygraphqlserverexposedmodel)
+			- [Available options for exposing models](#available-options-for-exposing-models)
 		- [Perform GraphQL queries](#perform-graphql-queries)
 	- [Credits and history](#credits-and-history)
 	- [License](#license)
 
 <!-- /TOC -->
-
-## Installation
 
 **easy_graphql_server** can be installed from PyPI using the built-in pip command:
 
@@ -176,23 +175,27 @@ schema.expose(FooQuery)
 schema.expose(BarMutation)
 ```
 
-#### Available options
+#### Available options for exposing methods
 
 The same options can be passed either as class attributes for subclasses of `Schema.ExposedQuery` and `Schema.ExposedMutation`, or as keyword arguments to `Schema.expose_query()` and `Schema.expose_mutation()` methods.
 
 Options for *queries* and *mutations* are the same.
 
-`name`
+ * `name` is the name under which the method shall be exposed
 
-`method`
+ * `method` is the callback function of your choice
 
-`input_format` input format for GraphQL method, passed as a (possible recursive) mapping; if unspecified or `None`, the defined GraphQL method will take no input.
+ * `input_format` is the input format for the GraphQL method, passed as a (possibly recursive) mapping; if unspecified or `None`, the defined GraphQL method will take no input; the mapping keys are
 
-output_format=None
-pass_graphql_selection=False
-pass_graphql_path=False
-pass_authenticated_user=False
-force_authenticated_user=False
+ * `output_format` is the output format of the GraphQL method, passed as a (possibly recursive) mapping or as a `list` containing one mapping
+
+ * `pass_graphql_selection` can either be a `bool` or a `str`; if set to `True`, the `graphql_selection` parameter will be passed to the callback method, indicating which fields are requested for output; if set to a `str`, the given string will be the name of the keyword parameter passed to the callback method instead of `graphql_selection`
+
+ * `pass_graphql_path` can either be a `bool` or a `str`; if set to `True`, the `graphql_path` parameter will be passed to the callback method, indicating as a `list[str]` the GraphQL path in which the method is being executed; if set to a `str`, the given string will be the name of the keyword parameter passed to the callback method instead of `graphql_path`
+
+ * `pass_authenticated_user` can either be a `bool` or a `str`; if set to `True`, the `authenticated_user` parameter will be passed to the callback method, indicating the user authenticated in the source HTTP request (or `None` if the request was unauthenticated); if set to a `str`, the given string will be the name of the keyword parameter passed to the callback method instead of `authenticated_user`
+
+ * `force_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
 
 ### Expose ORM models
 
@@ -247,11 +250,21 @@ schema = easy_graphql_server.Schema()
 schema.expose(ExposedPerson)
 ```
 
-#### Available options
+#### Available options for exposing models
 
 The same options can be passed either as class attributes for subclasses of `ExposedModel`, or as keyword arguments to `Schema.expose_model()` method.
 
+ * `orm_model` is the model class that we want to expose.
+
 ### Perform GraphQL queries
+
+If you want to perform GraphQL queries on the schema without going through a schema, you can use `Schema.execute()`. This method can take the following parameters:
+
+ * `query`: the GraphQL query, in the form of a `str`
+ * `variables`: variables to go along with the query (optional), as a `dict[str,Any]`
+ * `operation_name`: name of the operation to be executed within the query (optional)
+ * `authenticated_user`: parameter that will be passed to the callback functions of GraphQL methods that require it (optional)
+ * `serializable_output`: the output will be rendered as JSON-serializable `dict`, instead of a `graphql.GraphQLResult` instance
 
 ## Credits and history
 

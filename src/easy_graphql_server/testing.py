@@ -106,7 +106,7 @@ def generate_testcase(schema, graphql_path,
                         orm_model_manager_class.start_sql_log()
                 # compute output
                 json_result = schema.execute(
-                    source = graphql,
+                    query = graphql,
                     authenticated_user = user,
                     serializable_output = True,
                 )

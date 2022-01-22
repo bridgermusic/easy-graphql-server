@@ -109,7 +109,7 @@ class SchemaView:
             }]}, 400
         # compute & return result
         result = self.schema.execute(
-            source = query,
+            query = query,
             variables = variables,
             operation_name = operation_name,
             authenticated_user = authenticated_user,
