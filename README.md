@@ -199,6 +199,20 @@ Options for *queries* and *mutations* are the same.
 
 ### Expose ORM models
 
+What does it do?
+
+For instance, exposing a model called `Thing` will expose the following queries...
+
+ * `thing`: fetch a single instance of the model given its unique identifier
+ * `things`: fetch a collection of model instances, given filtering criteria, or unfiltered, paginated or not
+
+...and mutations:
+
+ * `create_thing`: create a single instance of the model given the data to be inserted
+ * `update_thing`: update a single instance of the model given its unique identifier and a mapping the new data to apply
+ * `delete_thing`: delete a single instance of the model given its unique identifier
+
+
 #### Calling `Schema.expose_model()`
 
 ```python
@@ -254,7 +268,29 @@ schema.expose(ExposedPerson)
 
 The same options can be passed either as class attributes for subclasses of `ExposedModel`, or as keyword arguments to `Schema.expose_model()` method.
 
- * `orm_model` is the model class that we want to expose.
+* `cannot_expose` is either a `bool`, or a `tuple[str]`; defaults to `False`; if set to `True`, no query or mutation method will be exposed for the model; if set to a list of field names, those fields will be excluded from every query and mutation
+
+* `can_create` is either a `bool`, or a `tuple[str]`; defaults to `True`; if set to `False`, no creation mutation method will be exposed for the model; if set to a list of field names, only those fields will be possible field values passed at insertion time to `create_...`
+
+* `cannot_create` is either a `bool`, or a `tuple[str]`; defaults to `False`; if set to `True`, no creation mutation method will be exposed for the model; if set to a list of field names, those fields will be excluded from possible field values passed at insertion time to `create_...`
+
+* `can_read` is either a `bool`, or a `tuple[str]`; defaults to `True`; if set to `False`, no query method will be exposed for the model; if set to a list of field names, only those fields will be exposed for the `...` (show one instance) and `...s` (show a collection of instances) queries (it also defines which fields are available as mutations results)
+
+* `cannot_read` is either a `bool`, or a `tuple[str]`; defaults to `False`; if set to `True`, no query method will be exposed for the model; if set to a list of field names, only those fields will be exposed for the `...` (show one instance) and `...s` (show a collection of instances) queries (it also defines which fields are not available as mutations results)
+
+* `can_update` is either a `bool`, or a `tuple[str]`; defaults to `True`; if set to `True`, no `delete_...` mutation method will be exposed for the model; if set to a list of field names, those fields will be the only possible keys for the `_` parameter (new data for instance fields) of the `update_...` mutation
+
+* `cannot_update` is either a `bool`, or a `tuple[str]`; defaults to `False`; if set to `True`, no `update_...` mutation method will be exposed for the model; if set to a list of field names, those fields will be excluded from possible keys for the `_` parameter (new data for instance fields) of the `update_...` mutation
+
+* `can_delete` is a `bool`; defaults to `True`; if set to `False`, no `delete_...` mutation method will be exposed for the model
+
+* `cannot_delete` is a `bool`; defaults to `False`; if set to `True`, no `delete_...` mutation method will be exposed for the model
+
+* `only_when_child_of` is either `None` (model does not have to be nested to be exposed), `True` (the model is not exposed if not nested), an ORM model class, or a tuple/list/set of ORM model classes (the defined model can only be exposed when nested directly under one of models passed as `only_when_child_of` parameter)
+
+* `force_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
+
+* `ensure_permissions` is either `None`, or a callback method returning a `bool` (`True` if operation is authorized, `False` otherwise), and taking as parameters `authenticated_user` (self-explanatory), `operation` (a value of the `easy_graphql_server.Operation` enum: `CREATE`, `READ`, `UPDATE` or `DELETE`) and `data` (new data, only applies to `CREATE` and `UPDATE`)
 
 ### Perform GraphQL queries
 
@@ -264,7 +300,7 @@ If you want to perform GraphQL queries on the schema without going through a sch
  * `variables`: variables to go along with the query (optional), as a `dict[str,Any]`
  * `operation_name`: name of the operation to be executed within the query (optional)
  * `authenticated_user`: parameter that will be passed to the callback functions of GraphQL methods that require it (optional)
- * `serializable_output`: the output will be rendered as JSON-serializable `dict`, instead of a `graphql.GraphQLResult` instance
+ * `serializable_output`: the output will be rendered as JSON-serializable `dict`, instead of a `graphql.execution.execute.ExecutionResult` instance
 
 ## Credits and history
 

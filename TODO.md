@@ -1,7 +1,7 @@
 # TODO
 
-- document options for `expose_model()`
 - enums generated for models should have unique names, even when nested
+- possibility to pre-filter collection of model instances with `authenticated_user`
 - allow custom fields for models (C, R, U, D)
 - `case_manager` in Schema
 - use description from Django fields
@@ -11,6 +11,7 @@
 
 # DONE
 
+- document options for `expose_model()`
 - document options for `expose_method()`
 - if no error, "errors" field should not be present in HTTP response (see https://graphql.org/learn/serving-over-http/)
 - split `types.py` into `graphql_types.py` and `types.py`
