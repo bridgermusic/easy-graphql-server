@@ -77,7 +77,7 @@ class DjangoModelManager(ModelManager):
         for field_name in list(data.keys()):
             if field_name in self.fields_info.foreign:
                 foreign_field = self.fields_info.foreign[field_name]
-                foreign_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                foreign_model_config = self.model_config.schema.get_model_config(
                     orm_model = foreign_field.orm_model)
                 foreign_model_config.orm_model_manager.create_one(
                     authenticated_user = authenticated_user,
@@ -100,7 +100,7 @@ class DjangoModelManager(ModelManager):
             for related_index, related_data in enumerate(children_data):
                 related_field = self.fields_info.related[field_name]
                 related_data[related_field.value_field_name] = instance.pk
-                related_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                related_model_config = self.model_config.schema.get_model_config(
                     orm_model = related_field.orm_model)
                 related_instance = related_model_config.orm_model_manager.create_one(
                     authenticated_user = authenticated_user,
@@ -176,7 +176,7 @@ class DjangoModelManager(ModelManager):
                 child_data = data.pop(field_name)
                 # if child_data is null, the reference will be deleted
                 if child_data is not None:
-                    child_model_config = self.model_config.schema.get_model_config_from_orm_model(
+                    child_model_config = self.model_config.schema.get_model_config(
                         orm_model = self.fields_info.foreign[field_name].orm_model)
                     child_identifier = child_data.pop(
                         child_model_config.orm_model_manager.fields_info.primary, None)
@@ -211,7 +211,7 @@ class DjangoModelManager(ModelManager):
         # related data
         for field_name, children_data in related_data.items():
             related_field = self.fields_info.related[field_name]
-            child_model_config = self.model_config.schema.get_model_config_from_orm_model(
+            child_model_config = self.model_config.schema.get_model_config(
                 orm_model = related_field.orm_model)
             children_identifiers = []
             # create & update
@@ -393,8 +393,8 @@ class DjangoModelManager(ModelManager):
                 foreign_field = self.fields_info.foreign[field_name]
                 only.append(field_prefix + foreign_field.value_field_name)
                 select_related.append(field_prefix + field_name)
-                foreign_orm_model_manager = schema.get_model_config_from_orm_model(
-                    foreign_field.orm_model).orm_model_manager
+                foreign_orm_model_manager = schema.get_model_config(
+                    orm_model = foreign_field.orm_model).orm_model_manager
                 # pylint: disable=W0612 # Unused variable '_'
                 foreign_only, foreign_prefetch_related, foreign_select_related = (
                     foreign_orm_model_manager.build_queryset_parts(
@@ -409,8 +409,8 @@ class DjangoModelManager(ModelManager):
             # there is a subselection, and it is a related field
             elif field_name in self.fields_info.related:
                 related_field = self.fields_info.related[field_name]
-                related_model_config = schema.get_model_config_from_orm_model(
-                    related_field.orm_model)
+                related_model_config = schema.get_model_config(
+                    orm_model = related_field.orm_model)
                 prefetch_related.append(
                     django.db.models.Prefetch(
                         field_name,
@@ -476,8 +476,7 @@ class DjangoModelManager(ModelManager):
         django.db.models.fields.json.JSONField: graphql_types.JSONString,
     }
 
-    @classmethod
-    def _to_graphql_type_from_field(cls, field):
+    def _to_graphql_type_from_field(self, field):
         """
             Convert Django ORM model fields to GraphQL type.
         """
@@ -486,15 +485,17 @@ class DjangoModelManager(ModelManager):
             graphql_type = convert.to_graphql_enum_from_choices(
                 prefix = f'{field.model.__name__}__{field.name}',
                 choices = field.choices,
+                schema = self.model_config.schema,
             )
         # scalar
-        elif isinstance(field, tuple(cls.GRAPHQL_TYPES_MAPPING)):
-            graphql_type = cls.GRAPHQL_TYPES_MAPPING[type(field)]
+        elif isinstance(field, tuple(self.GRAPHQL_TYPES_MAPPING)):
+            graphql_type = self.GRAPHQL_TYPES_MAPPING[type(field)]
         # Postgres
         elif WITH_POSTGRES_SUPPORT:
             # array
             if isinstance(field, django.contrib.postgres.fields.array.ArrayField):
-                graphql_type = graphql_types.List(cls._to_graphql_type_from_field(field.base_field))
+                graphql_type = graphql_types.List(
+                    self._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:
             raise ValueError(f'Could not convert {field} to graphql type')

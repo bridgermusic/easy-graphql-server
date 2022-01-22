@@ -115,6 +115,4 @@ class SchemaView:
             authenticated_user = authenticated_user,
             serializable_output = True,
         )
-        if 'errors' in result and result['errors'] is None:
-            result.pop('errors')
         return result, 200

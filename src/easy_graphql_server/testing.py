@@ -102,7 +102,8 @@ def generate_testcase(schema, graphql_path,
             for index, (user, graphql, json_, sql) in self._iterate_data(graphql_path):
                 # clear sql log
                 if sql:
-                    for orm_model_manager_class in schema.orm_model_manager_classes:
+                    schema.check()
+                    for orm_model_manager_class in set(schema.orm_model_manager_classes):
                         orm_model_manager_class.start_sql_log()
                 # compute output
                 json_result = schema.execute(
@@ -125,7 +126,7 @@ def generate_testcase(schema, graphql_path,
                 # check SQL also (when provided)
                 if sql:
                     sql_result_list = []
-                    for orm_model_manager_class in schema.orm_model_manager_classes:
+                    for orm_model_manager_class in set(schema.orm_model_manager_classes):
                         sql_result_list += orm_model_manager_class.get_sql_log()
                     sql_result = '\n;\n'.join(sql_result_list)
                     try:

@@ -79,8 +79,8 @@
 {
     "data": {
         "update_house": {
-            "id": 2,
-            "location": "Paris",
+            "id": 1,
+            "location": "over the rainbow",
             "owner": {
                 "id": 1,
                 "first_name": "Johnny",
@@ -95,8 +95,8 @@
 {
     "data": {
         "update_house": {
-            "id": 2,
-            "location": "Paris",
+            "id": 1,
+            "location": "over the rainbow",
             "owner": {
                 "id": 3,
                 "first_name": "Beth",

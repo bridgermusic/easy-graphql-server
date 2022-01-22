@@ -16,7 +16,7 @@ from graphql import \
     GraphQLField, GraphQLArgument, \
     GraphQLObjectType, GraphQLInputObjectType
 
-from . import types, graphql_types
+from . import types, graphql_types, introspection
 
 
 PYTHON_GRAPHQL_TYPES_MAPPING = {
@@ -38,63 +38,83 @@ PYTHON_GRAPHQL_TYPES_MAPPING = {
 
 _enums_cache = {}
 
-def _is_instance_or_class(thing, klass):
-    return isinstance(thing, klass) or (inspect.isclass(thing) and issubclass(thing, klass))
 
-def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=True):
+def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=True, schema=None):
     """
         Create a `GraphQLEnumType` from a list of choices.
 
         Choices must presented as a list of key-value pairs.
     """
-    if prefix in _enums_cache:
-        graphql_type = _enums_cache[prefix]
+    key = (schema, prefix)
+    if key in _enums_cache:
+        graphql_type = _enums_cache[key]
     else:
         transform = lambda string: string.upper() if capitalize else lambda string: string
-        graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
+        graphql_type = _enums_cache[key] = GraphQLEnumType(f'{prefix}__enum_type', {
             transform(re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', key)): GraphQLEnumValue(key, value)
             for key, value in choices
         }, description=description)
     return graphql_type
 
-def to_graphql_type(type_, prefix, for_input=False):
+def to_graphql_type(type_, prefix, for_input=False, schema=None):
     """
         Returns a GraphQL type given a `GraphQLType`, a Python native type,
         a mapping, a single-item list or a subclass of `enum.Enum`.
     """
     # if this is already a graphql type, return it as is
-    if _is_instance_or_class(type_, GraphQLType):
+    if introspection.is_instance_or_subclass(type_, GraphQLType):
         return type_
     # mapping
     if isinstance(type_, dict):
-        return to_graphql_objecttype(type_, prefix, for_input=for_input)
+        return to_graphql_objecttype(type_, prefix, for_input=for_input, schema=schema)
     if inspect.isclass(type_):
         # convert native Python types
         if type_ in PYTHON_GRAPHQL_TYPES_MAPPING:
             return PYTHON_GRAPHQL_TYPES_MAPPING[type_]
         # enum
         if issubclass(type_, enum.Enum):
-            return to_graphql_enum_from_choices(prefix, [
-                (key, value.value)
-                for key, value in type_.__members__.items()
-            ])
+            return to_graphql_enum_from_choices(
+                prefix = prefix,
+                choices = [(key, value.value) for key, value in type_.__members__.items()],
+                schema = schema)
     # list
     if isinstance(type_, list) and len(type_) == 1:
         return graphql_types.List(
-            to_graphql_type(type_[0], prefix, for_input=for_input)
+            to_graphql_type(type_[0], prefix, for_input=for_input, schema=schema)
         )
     # mandatory
     if isinstance(type_, types.Mandatory):
         return graphql_types.NonNull(
-            to_graphql_type(type_.type_, prefix, for_input=for_input)
+            to_graphql_type(type_.type_, prefix, for_input=for_input, schema=schema)
         )
+    # existing model interface
+    if isinstance(type_, types.ModelInterface):
+        model_config = schema.get_model_config(name=type_.model_name)
+        if model_config is None:
+            raise ValueError(f'No model in schema with name `{type_.model_name}` '
+                '(consider changing the order of expositions declaration)')
+        mapping = model_config.get_type_mapping(operation=type_.operation)
+        if not type_.exclude and not type_.additional:
+            return to_graphql_type(
+                type_ = mapping,
+                prefix = model_config.name,
+                for_input = for_input,
+                schema = schema)
+        for field_name in type_.exclude:
+            mapping.pop(field_name, None)
+        mapping.update(type_.additional)
+        return to_graphql_type(
+            type_ = mapping,
+            prefix = prefix,
+            for_input = for_input,
+            schema = schema)
     # oops.
     raise ValueError(f'Could not convert {type_} to graphql type')
 
 
 _objecttype_cache = {}
 
-def to_graphql_objecttype(type_, prefix, for_input=False):
+def to_graphql_objecttype(type_, prefix, for_input=False, schema=None):
     """
         Returns a `GraphQLInputObjectType` or a `GraphQLObjectType` from a given type.
 
@@ -125,7 +145,8 @@ def to_graphql_objecttype(type_, prefix, for_input=False):
             key: field_class(to_graphql_type(
                 type_ = value,
                 prefix = f'{prefix}__{key}',
-                for_input = for_input))
+                for_input = for_input,
+                schema = schema))
             for key, value in type_.items()
         })
         _objecttype_cache[cache_key] = object_type
@@ -133,7 +154,7 @@ def to_graphql_objecttype(type_, prefix, for_input=False):
     # otherwise
     return GraphQLInputField(type_) if for_input else GraphQLField(type_)
 
-def to_graphql_argument(type_, prefix):
+def to_graphql_argument(type_, prefix, schema=None):
     """
         Returns a `GraphQLArgument`, taking as argument either a `GraphQLArgument`
         or `dict` mapping of `str` to types that are supported by `to_graphql_type()`.
@@ -150,7 +171,8 @@ def to_graphql_argument(type_, prefix):
                 GraphQLArgument(to_graphql_type(
                     type_ = value,
                     prefix = f'{prefix}__{key}',
-                    for_input = True))
+                    for_input = True,
+                    schema = schema))
             )
             for key, value in type_.items()
         }

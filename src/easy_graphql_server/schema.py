@@ -137,7 +137,10 @@ class Schema:
             ),
         )
         if serializable_output:
-            return result.formatted
+            formatted_result = result.formatted
+            if 'errors' in formatted_result and not formatted_result['errors']:
+                del formatted_result['errors']
+            return formatted_result
         return result
 
     def check(self, graphql_schema=None):
@@ -150,13 +153,16 @@ class Schema:
             raise error
         self.dirty = False
 
-    def get_model_config_from_orm_model(self, orm_model):
+    def get_model_config(self, orm_model=None, name=None):
         """
             Retrieve an instance of `ModelConfig` if the passed `orm_model` has been
             exposed, `None` otherwise.
         """
+        if not bool(orm_model) ^ bool(name):
+            raise ValueError('You have to specify exactly one of the following parameters: '
+                '`orm_model`, `name`')
         for model_config in self.models_configs:
-            if model_config.orm_model_manager.orm_model == orm_model:
+            if model_config.orm_model_manager.orm_model == orm_model or model_config.name == name:
                 return model_config
         return None
 
@@ -194,11 +200,13 @@ class Schema:
             type_ = output_format,
             prefix = name,
             for_input = False,
+            schema = self,
         ) if output_format else None,
         # input format
         args = to_graphql_argument(
             type_ = input_format,
             prefix = name,
+            schema = self,
         ) if input_format else None,
         # resolve method
         resolve = self._make_callback(

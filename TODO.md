@@ -1,6 +1,7 @@
 # TODO
 
-- enums generated for models should have unique names, even when nested
+- give possibility to use model fields in `input_format` and `output_format` mappings
+- check generated type names (from model exposition) in tests
 - possibility to pre-filter collection of model instances with `authenticated_user`
 - allow custom fields for models (C, R, U, D)
 - `case_manager` in Schema
@@ -11,6 +12,8 @@
 
 # DONE
 
+- give possibility to use model interfaces in `input_format` and `output_format` mappings
+- enums generated for models should have unique names, even when nested
 - document options for `expose_model()`
 - document options for `expose_method()`
 - if no error, "errors" field should not be present in HTTP response (see https://graphql.org/learn/serving-over-http/)

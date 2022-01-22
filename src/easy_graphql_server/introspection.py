@@ -44,3 +44,10 @@ def get_public_class_attributes(cls):
         for attribute in dir(cls)
         if attribute[0] != '_'
     }
+
+
+def is_instance_or_subclass(thing, klass):
+    """
+        Check if a thing is an instance or subclass of a given class (or set of classes)
+    """
+    return isinstance(thing, klass) or (inspect.isclass(thing) and issubclass(thing, klass))

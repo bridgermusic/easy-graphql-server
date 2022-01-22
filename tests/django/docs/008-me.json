@@ -1,0 +1,48 @@
+{
+  "data": {
+    "me": {
+      "id": 1,
+      "username": "someone@example.com",
+      "is_superuser": false,
+      "is_staff": false
+    }
+  }
+}
+
+;
+
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Cannot query field 'houses' on type 'me__output_type'.",
+      "locations": [
+        {
+          "line": 4,
+          "column": 5
+        }
+      ],
+      "path": null
+    },
+    {
+      "message": "Cannot query field 'home' on type 'me__output_type'.",
+      "locations": [
+        {
+          "line": 4,
+          "column": 13
+        }
+      ],
+      "path": null
+    },
+    {
+      "message": "Cannot query field 'daily_occupations' on type 'me__output_type'.",
+      "locations": [
+        {
+          "line": 4,
+          "column": 19
+        }
+      ],
+      "path": null
+    }
+  ]
+}

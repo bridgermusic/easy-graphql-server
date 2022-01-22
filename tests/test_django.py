@@ -1,50 +1,14 @@
-import os
 import pathlib
 import json
 
 import django.test
-import django.contrib.auth
 from django.conf import settings
 
-from easy_graphql_server.testing import make_tests_loader
-
-from .django import schema1, schema2, schema3
+from .django.base_test_case import BaseTestCase
 from .django.models import populate_database
 
 
-DEFAULT_TESTS_PATH = os.path.join(os.path.dirname(__file__), 'schemas/django/docs')
-TESTS_PATH = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', DEFAULT_TESTS_PATH)
 ENDPOINT_URL = '/graphql'
-
-
-class BaseTestCase(django.test.TransactionTestCase):
-    reset_sequences = True
-    databases = ['default']
-
-    def setUp(self):
-        self.tearDown()
-
-    def get_or_create_user(self, username):
-        data = {'username': username}
-        if 'staff' in username:
-            data['is_staff'] = True
-        if 'admin' in username:
-            data['is_superuser'] = True
-        user_model = django.contrib.auth.get_user_model()
-        try:
-            user = user_model.objects.get(username = username)
-        except user_model.DoesNotExist:
-            user, created = django.contrib.auth.get_user_model().objects.get_or_create(**data)
-            user.set_password(settings.DEFAULT_USER_PASSWORD)
-            user.save()
-        return user
-
-
-load_tests = make_tests_loader(
-    schemata = (schema1, schema2, schema3),
-    path = TESTS_PATH,
-    base_test_class = BaseTestCase,
-)
 
 
 class DjangoGraphqlHttpTest(BaseTestCase):

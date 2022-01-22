@@ -3,5 +3,6 @@
 set -e
 
 PYTHONPATH=src python -m unittest -v tests.test_introspection
-PYTHONPATH=src python -m unittest -v tests.test_methods
-PYTHONPATH=src python django_tests_manage.py test tests.test_django -v3
+PYTHONPATH=src python -m unittest -v tests.test_data_methods
+PYTHONPATH=src python django_tests_manage.py test tests.test_django
+PYTHONPATH=src python django_tests_manage.py test tests.test_data_django

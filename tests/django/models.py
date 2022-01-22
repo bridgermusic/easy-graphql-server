@@ -124,7 +124,7 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
 
     # ensure database is empty
     if Person.objects.count() or House.objects.count() or DailyOccupation.objects.count():
-        raise EXception('`populate_database()` should be called on an empty database')
+        raise Exception('`populate_database()` should be called on an empty database')
 
     # initialize generator
     Faker.seed(random_seed)

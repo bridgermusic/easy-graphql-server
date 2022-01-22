@@ -82,6 +82,7 @@ class ModelConfig:
         output_type = to_graphql_objecttype(
             type_ = self.get_type_mapping(Operation.READ),
             prefix = self.name,
+            schema = self.schema,
         )
         # expose create method
         if self.available_operations[Operation.CREATE]:
@@ -91,6 +92,7 @@ class ModelConfig:
                 input_format = to_graphql_argument(
                     type_ = self.get_type_mapping(Operation.CREATE),
                     prefix = f'create_{self.name}',
+                    schema = self.schema,
                 ),
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
@@ -136,6 +138,7 @@ class ModelConfig:
                         {'_': self.get_type_mapping(Operation.UPDATE)},
                         ** self.orm_model_manager.fields_info.unique),
                     prefix = f'update_{self.name}',
+                    schema = self.schema,
                 ),
                 output_format = output_type,
                 method = self.orm_model_manager.decorate(
@@ -210,7 +213,7 @@ class ModelConfig:
             if not self.can_perform(operation, field_name):
                 continue
             # retrieve other model config
-            other_model_config = self.schema.get_model_config_from_orm_model(field.orm_model)
+            other_model_config = self.schema.get_model_config(orm_model=field.orm_model)
             if other_model_config is None:
                 continue
             # only_when_child_of is important
@@ -245,6 +248,7 @@ class ModelConfig:
         return to_graphql_argument(
             type_ = self.get_type_mapping(operation),
             prefix = prefix,
+            schema = self.schema,
         )
 
     # authorizations
