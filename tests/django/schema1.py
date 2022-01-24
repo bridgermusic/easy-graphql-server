@@ -41,7 +41,7 @@ schema.expose_model(
                 for occupation
                 in DailyOccupation.objects.filter(person__home__id = instance.id).values('occupation').annotate(
                     total_hours_per_day = Sum('hours_per_day'),
-                )
+                ).order_by('occupation')
             ]
         }
     ],
