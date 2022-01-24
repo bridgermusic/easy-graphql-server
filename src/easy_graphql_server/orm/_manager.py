@@ -38,14 +38,16 @@ class ModelManager:
         filters = {}
         # base mapping
         if mapping is None:
-            mapping = self.model_config.get_type_mapping(Operation.READ)
+            mapping = self.model_config.get_type_mapping(
+                operation = Operation.READ,
+                with_custom_fields = False)
         # browse all fields
         for field_name, graphql_type in mapping.items():
             prefixed_field_name = f'{prefix}{field_name}'
             # foreign & related field
             if isinstance(graphql_type, (dict, list)):
-                mapping = graphql_type[0] if isinstance(graphql_type, list) else graphql_type
-                filters.update(self.get_filters(mapping, f'{prefixed_field_name}__'))
+                submapping = graphql_type[0] if isinstance(graphql_type, list) else graphql_type
+                filters.update(self.get_filters(submapping, f'{prefixed_field_name}__'))
             # value field
             elif graphql_type in LOOKUPS:
                 # basic filter (equality)
@@ -105,6 +107,18 @@ class ModelManager:
             Result is a `dict`, corresponding to the format given by `graphql_selection`.
         """
         raise NotImplementedError()
+
+    #
+
+    def _read_custom_fields(self, instance, authenticated_user, graphql_selection):
+        result = {}
+        for custom_field in self.model_config.custom_fields:
+            if custom_field.name in graphql_selection:
+                result[custom_field.name] = custom_field.perform_one_read(
+                    instance = instance,
+                    authenticated_user = authenticated_user,
+                    graphql_selection = graphql_selection)
+        return result
 
     # methods should be executed within an atomic database transaction
 

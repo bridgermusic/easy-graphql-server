@@ -179,3 +179,24 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
             owner = people[fake.random_int(0, people_count - 1)],
         )
         bank_account.save()
+
+    # populate occupations
+    for person in people:
+        sum = 0
+        OCCUPATION_CHOICES = ('EAT', 'SLEEP', 'WORK', 'COMMUTE')
+        for occupation in OCCUPATION_CHOICES:
+            if sum == 24:
+                break
+            hours_per_day = fake.random_int(0, 24 - sum)
+            DailyOccupation(
+                hours_per_day = hours_per_day,
+                occupation = occupation,
+                person = person,
+            ).save()
+            sum += hours_per_day
+        if sum < 24:
+            DailyOccupation(
+                hours_per_day = 24 - sum,
+                occupation = occupation,
+                person = person,
+            ).save()

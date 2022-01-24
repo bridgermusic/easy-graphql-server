@@ -5,4 +5,4 @@
 from .types import JSONString, Mandatory, Model
 from .schema import Schema
 from .operations import Operation
-from .exposition import ExposedModel, ExposedQuery, ExposedMutation
+from .exposition import ExposedModel, ExposedQuery, ExposedMutation, CustomField

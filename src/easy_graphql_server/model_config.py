@@ -6,7 +6,9 @@ from .operations import Operation
 from .convert import to_graphql_objecttype, to_graphql_argument
 from .types import Mandatory
 from .orm import ORM
-from . import exceptions
+from .model_config_custom_field import ModelConfigCustomField
+from . import exceptions, introspection
+from .exposition import CustomField
 
 
 class ModelConfig:
@@ -25,7 +27,7 @@ class ModelConfig:
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
             only_when_child_of=None, force_authenticated_user=False,
-            ensure_permissions=None):
+            ensure_permissions=None, custom_fields=None):
         # store raw options
         self.schema = schema
         self.force_authenticated_user = force_authenticated_user
@@ -34,6 +36,19 @@ class ModelConfig:
         # name
         self.name = name or schema.case_manager.convert(orm_model.__name__)
         self.plural_name = plural_name or f'{self.name}s'
+        # custom fields
+        self.custom_fields = []
+        if custom_fields:
+            for custom_field in custom_fields:
+                if isinstance(custom_field, dict):
+                    self._add_custom_field(**custom_field)
+                elif issubclass(custom_field, CustomField):
+                    introspection.validate_class_attributes_against_method_arguments(
+                        cls = custom_field,
+                        method = ModelConfigCustomField,
+                        excluded_arguments = ('self', ))
+                    attributes = introspection.get_public_class_attributes(custom_field)
+                    self._add_custom_field(**attributes)
         # what methods are exposed
         self.available_operations = {
             Operation.READ: (can_read is not False and cannot_read is not True),
@@ -183,7 +198,8 @@ class ModelConfig:
 
     # types computation
 
-    def get_type_mapping(self, operation, exclude=None, depth=0, linked_field=None):
+    def get_type_mapping(self, operation=None, exclude=None, depth=0, linked_field=None,
+            with_custom_fields=True):
         """
             Return a `dict` from `str` to GraphQL types, corresponding to the model.
 
@@ -203,14 +219,14 @@ class ModelConfig:
                 if depth == 0 and field_name == fields_info.primary:
                     continue
             # ensure the field is exposed for this operation
-            if not self.can_perform(operation, field_name):
+            if operation is not None and not self.can_perform(operation, field_name):
                 continue
             # map
             mapping[field_name] = graphql_type
         # foreign & related fields...
         for field_name, field in fields_info.linked.items():
             # ensure the field is exposed for this operation
-            if not self.can_perform(operation, field_name):
+            if operation is not None and not self.can_perform(operation, field_name):
                 continue
             # retrieve other model config
             other_model_config = self.schema.get_model_config(orm_model=field.orm_model)
@@ -230,7 +246,7 @@ class ModelConfig:
                 exclude = exclude | _exclude,
                 depth = depth + 1,
                 linked_field = field,
-            )
+                with_custom_fields = with_custom_fields)
             # related are presented as collections
             if field_name in fields_info.related:
                 mapping[field_name] = [mapping[field_name]]
@@ -241,15 +257,13 @@ class ModelConfig:
                     if linked_field is not None and field_name == linked_field.value_field_name:
                         continue
                     mapping[field_name] = Mandatory(graphql_type)
+        # custom fields
+        if with_custom_fields:
+            for custom_field in self.custom_fields:
+                if operation is None or custom_field.can_perfom(operation):
+                    mapping[custom_field.name] = custom_field.format
         # result
         return mapping
-
-    def _get_argument(self, operation, prefix):
-        return to_graphql_argument(
-            type_ = self.get_type_mapping(operation),
-            prefix = prefix,
-            schema = self.schema,
-        )
 
     # authorizations
 
@@ -321,3 +335,9 @@ class ModelConfig:
                 authenticated_user = authenticated_user,
                 path = graphql_path,
             )
+
+    # custom field
+
+    def _add_custom_field(self, *args, **kwargs):
+        custom_field = ModelConfigCustomField(*args, **kwargs)
+        self.custom_fields.append(custom_field)

@@ -93,7 +93,9 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
         if model_config is None:
             raise ValueError(f'No model in schema with name `{type_.model_name}` '
                 '(consider changing the order of expositions declaration)')
-        mapping = model_config.get_type_mapping(operation=type_.operation)
+        mapping = model_config.get_type_mapping(
+            operation = type_.operation,
+            with_custom_fields = False)
         if not type_.exclude and not type_.additional:
             return to_graphql_type(
                 type_ = mapping,
@@ -103,6 +105,25 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
         for field_name in type_.exclude:
             mapping.pop(field_name, None)
         mapping.update(type_.additional)
+        return to_graphql_type(
+            type_ = mapping,
+            prefix = prefix,
+            for_input = for_input,
+            schema = schema)
+    # existing model field
+    if isinstance(type_, types.ModelField):
+        model_config = schema.get_model_config(name=type_.model_name)
+        if model_config is None:
+            raise ValueError(f'No model in schema with name `{type_.model_name}` '
+                '(consider changing the order of expositions declaration)')
+        mapping = model_config.get_type_mapping(with_custom_fields = False)
+        try:
+            for field_name in type_.field_path:
+                mapping = mapping[field_name]
+        except KeyError as error:
+            raise ValueError(
+                f'Invalid field path `{".".join(type_.field_path)}` '
+                f'for model named `{type_.model_name}`') from error
         return to_graphql_type(
             type_ = mapping,
             prefix = prefix,

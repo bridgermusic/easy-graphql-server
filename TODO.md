@@ -1,17 +1,20 @@
 # TODO
 
-- give possibility to use model fields in `input_format` and `output_format` mappings
-- check generated type names (from model exposition) in tests
 - possibility to pre-filter collection of model instances with `authenticated_user`
-- allow custom fields for models (C, R, U, D)
+- allow custom fields for models (C, U, D)
+- limit/offset in model collection queries
+- order in model collection queries
+- check generated type names (from model exposition) in tests
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
 - intercept `GraphQLError` (raised for required fields for instance)
-- rewrite `webserver._schema_view.SchemaView._must_serve_graphiql()` method
+- rewrite `webserver._schema_view.SchemaView._must_serve_graphiql()` method (use 304 also)
 
 # DONE
 
+- allow custom fields for models (R)
+- give possibility to use model fields in `input_format` and `output_format` mappings
 - give possibility to use model interfaces in `input_format` and `output_format` mappings
 - enums generated for models should have unique names, even when nested
 - document options for `expose_model()`

@@ -241,33 +241,28 @@ class Schema:
             subclass_attributes = introspection.get_public_class_attributes(subclass)
             # different parent classes, different results
             if issubclass(subclass, exposition.ExposedModel):
-                parent_class = exposition.ExposedModel
+                message = ' when subclassing `ExposedModel`'
                 exposition_method = self.expose_model
-                arguments = introspection.get_method_arguments(ModelConfig, ('self', 'schema'))
+                validation_method = ModelConfig
+                excluded_arguments = ('self', 'schema')
             elif issubclass(subclass, exposition.ExposedQuery):
-                parent_class = exposition.ExposedQuery
+                message = ' when subclassing `ExposedQuery`'
                 exposition_method = self.expose_query
-                arguments = introspection.get_method_arguments(
-                    self._expose_method, ('self', 'type_'))
+                validation_method = self._expose_method
+                excluded_arguments = ('self', 'type_')
             elif issubclass(subclass, exposition.ExposedMutation):
-                parent_class = exposition.ExposedMutation
+                message = ' when subclassing `ExposedMutation`'
                 exposition_method = self.expose_mutation
-                arguments = introspection.get_method_arguments(
-                    self._expose_method, ('self', 'type_'))
+                validation_method = self._expose_method
+                excluded_arguments = ('self', 'type_')
             else:
                 raise ValueError(f'Unrecognized class: {subclass}')
             # attributes validation
-            required_arguments = set(
-                argument for argument, required in arguments.items() if required)
-            for required_argument in required_arguments:
-                if required_argument not in subclass_attributes:
-                    raise ValueError(f'Attribute `{required_argument}` should be present on '
-                        f'class `{subclass}` when subclassing `{parent_class}`')
-            for subclass_attribute in subclass_attributes:
-                if subclass_attribute not in arguments:
-                    raise ValueError(f'Invalid attribute `{subclass_attribute}` for '
-                        f'class `{subclass}` when subclassing `{parent_class}`; '
-                        'consider prefixing it with an underscore')
+            introspection.validate_class_attributes_against_method_arguments(
+                cls = subclass,
+                method = validation_method,
+                excluded_arguments = excluded_arguments,
+                message = message)
             # actual exposition
             exposition_method(**subclass_attributes)
 

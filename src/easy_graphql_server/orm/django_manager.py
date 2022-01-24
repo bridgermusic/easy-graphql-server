@@ -316,9 +316,15 @@ class DjangoModelManager(ModelManager):
                 authenticated_user = authenticated_user,
                 graphql_path = graphql_path,
             )
-        # build result
-        result = {}
+        # build result: custom fields
+        result = self._read_custom_fields(
+            instance = instance,
+            authenticated_user = authenticated_user,
+            graphql_selection = graphql_selection)
+        # build result: from instance attributes
         for field_name, graphql_subselection in graphql_selection.items():
+            if field_name in result:
+                continue
             field_value = getattr(instance, field_name)
             # field_value field
             if graphql_subselection is None:
