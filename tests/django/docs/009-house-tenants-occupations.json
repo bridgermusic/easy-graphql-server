@@ -1,0 +1,35 @@
+{
+  "data": {
+    "house": {
+      "tenants": [
+        {
+          "username": "christy.gonzales@example.com"
+        },
+        {
+          "username": "anthony.mullen@example.com"
+        },
+        {
+          "username": "stephanie.foster@example.com"
+        }
+      ],
+      "tenants_occupations": [
+        {
+          "occupation": "COMMUTE",
+          "hours_per_day": 9
+        },
+        {
+          "occupation": "EAT",
+          "hours_per_day": 40
+        },
+        {
+          "occupation": "SLEEP",
+          "hours_per_day": 16
+        },
+        {
+          "occupation": "WORK",
+          "hours_per_day": 7
+        }
+      ]
+    }
+  }
+}

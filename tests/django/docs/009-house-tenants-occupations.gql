@@ -1,0 +1,11 @@
+query {
+  house (id: 1) {
+    tenants {
+      username
+    }
+    tenants_occupations {
+      occupation
+      hours_per_day
+    }
+  }
+}
