@@ -37,7 +37,7 @@ class ExposedHouseTenantsOccupations(easy_graphql_server.CustomField):
             for occupation
             in DailyOccupation.objects.filter(person__home__id = instance.id).values('occupation').annotate(
                 total_hours_per_day = Sum('hours_per_day'),
-            )
+            ).order_by('occupation')
         ]
 
 class ExposedHouse(easy_graphql_server.ExposedModel):
