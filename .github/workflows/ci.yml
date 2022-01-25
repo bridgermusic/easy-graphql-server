@@ -20,7 +20,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Clean
         run: |
-          time sudo rm -rf /usr/share/dotnet
+          # time sudo rm -rf /usr/share/dotnet
           time sudo rm -rf /opt/ghc
           time sudo rm -rf "/usr/local/share/boost"
           time sudo rm -rf "$AGENT_TOOLSDIRECTORY"
