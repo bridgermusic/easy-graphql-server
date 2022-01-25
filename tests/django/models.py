@@ -1,3 +1,5 @@
+import sqlite3
+
 from django.db import models
 import django.contrib.auth.models
 import django.core.exceptions
@@ -120,7 +122,25 @@ class BankAccount(models.Model):
         return cls.objects.filter(owner_id = authenticated_user.id)
 
 
+template_database = None
 def populate_database(random_seed=1985, houses_count=123, people_count=456, max_houses_count_per_person=5, bank_accounts_count=789):
+
+    # try to restore from template database
+    global template_database
+    if template_database is not None:
+        django_database = django.db.connections.all()[0].connection
+        # clear Django database
+        sql = """
+            PRAGMA writable_schema = 1;
+            DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
+            PRAGMA writable_schema = 0;
+            PRAGMA INTEGRITY_CHECK;
+        """
+        for statement in sql.split(';'):
+            django_database.execute(statement)
+        # restore database to previous state, and exit function
+        template_database.backup(django_database)
+        return
 
     # ensure database is empty
     if Person.objects.count() or House.objects.count() or DailyOccupation.objects.count():
@@ -200,3 +220,9 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
                 occupation = occupation,
                 person = person,
             ).save()
+
+    # save to template database
+    if template_database is None:
+        template_database = sqlite3.connect(':memory:')
+        django_database = django.db.connections.all()[0].connection
+        django_database.backup(template_database)

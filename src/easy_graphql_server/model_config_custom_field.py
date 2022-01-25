@@ -12,6 +12,7 @@ class ModelConfigCustomField:
     def __init__(self, name, format, read_one=None, read_many=None,
             update_one=None, update_many=None, create_one=None, create_many=None,
             delete_one=None, delete_many=None):
+        # pylint: disable=R0913 # Too many arguments
         self.name = name
         self.format = format
         self.read_one = read_one
