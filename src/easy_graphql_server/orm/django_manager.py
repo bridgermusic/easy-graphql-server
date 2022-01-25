@@ -291,10 +291,17 @@ class DjangoModelManager(ModelManager):
     # helpers for reading
 
     def _read(self, graphql_selection, authenticated_user, **filters):
-        return self.build_queryset(
+        # build queryset as intended by easy_graphql_server
+        queryset = self.build_queryset(
             graphql_selection = graphql_selection,
             authenticated_user = authenticated_user
         ).filter(**filters)
+        # filter queryset, depending on model config
+        queryset = self.model_config.filter(
+            queryset = queryset,
+            authenticated_user = authenticated_user)
+        # return resulting queryset
+        return queryset
 
     def _read_one(self, graphql_selection, authenticated_user, **filters):
         try:

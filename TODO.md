@@ -1,6 +1,5 @@
 # TODO
 
-- possibility to pre-filter collection of model instances with `authenticated_user`
 - allow custom fields for models (C, U, D)
 - limit/offset in model collection queries
 - order in model collection queries
@@ -13,6 +12,7 @@
 
 # DONE
 
+- possibility to pre-filter collection of model instances with `authenticated_user`
 - allow custom fields for models (R)
 - give possibility to use model fields in `input_format` and `output_format` mappings
 - give possibility to use model interfaces in `input_format` and `output_format` mappings
