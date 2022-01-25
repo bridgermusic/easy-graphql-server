@@ -1,6 +1,7 @@
 import sqlite3
 
 from django.db import models
+from django.db.models import Q
 import django.contrib.auth.models
 import django.core.exceptions
 from django.conf import settings
@@ -78,6 +79,14 @@ class House(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='houses')
+    def filter_by_authenticated_user(queryset, authenticated_user):
+        if not authenticated_user:
+            return queryset.none()
+        if authenticated_user.is_superuser:
+            return queryset
+        return queryset.filter(
+            Q(tenants__id = authenticated_user.id) | Q(owner_id = authenticated_user.id)
+        )
 
 
 OCCUPATION_CHOICES = ('EAT', 'SLEEP', 'WORK', 'COMMUTE', '_')

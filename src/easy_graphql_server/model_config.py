@@ -27,12 +27,14 @@ class ModelConfig:
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
             only_when_child_of=None, force_authenticated_user=False,
-            ensure_permissions=None, custom_fields=None):
+            ensure_permissions=None, filter_by_authenticated_user=None,
+            custom_fields=None):
         # store raw options
         self.schema = schema
         self.force_authenticated_user = force_authenticated_user
         self.only_when_child_of = only_when_child_of
         self.ensure_permissions = ensure_permissions
+        self.filter_by_authenticated_user = filter_by_authenticated_user
         # name
         self.name = name or schema.case_manager.convert(orm_model.__name__)
         self.plural_name = plural_name or f'{self.name}s'
@@ -308,13 +310,25 @@ class ModelConfig:
             `Operation.UPDATE`. It is a dictionary containing the new provided data
             for the instance.
         """
-        if hasattr(instance, 'ensure_permissions'):
-            if not instance.ensure_permissions(authenticated_user, operation, data):
-                return False
         if self.ensure_permissions:
             if not self.ensure_permissions(instance, authenticated_user, operation, data):
                 return False
+        if hasattr(instance, 'ensure_permissions'):
+            if not instance.ensure_permissions(authenticated_user, operation, data):
+                return False
         return True
+
+    def filter(self, queryset, authenticated_user):
+        """
+            Returns a Django `Queryset`, which is a filtered version of the input `queryset`
+            only showing what is available to the `authenticated_user`.
+        """
+        if self.filter_by_authenticated_user:
+            return self.filter_by_authenticated_user(queryset, authenticated_user)
+        if hasattr(self.orm_model_manager.orm_model, 'filter_by_authenticated_user'):
+            return self.orm_model_manager.orm_model.filter_by_authenticated_user(
+                queryset, authenticated_user)
+        return queryset
 
     def enforce_permissions(self, operation, instance, authenticated_user,
             data=None, graphql_path=None):

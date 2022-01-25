@@ -292,6 +292,8 @@ The same options can be passed either as class attributes for subclasses of `Exp
 
 * `ensure_permissions` is either `None`, or a callback method returning a `bool` (`True` if operation is authorized, `False` otherwise), and taking as parameters `authenticated_user` (self-explanatory), `operation` (a value of the `easy_graphql_server.Operation` enum: `CREATE`, `READ`, `UPDATE` or `DELETE`) and `data` (new data, only applies to `CREATE` and `UPDATE`)
 
+* `filter_by_authenticated_user` is either `None`, or a callback method returning a `queryset`, and taking as parameters `queryset` and `authenticated_user`
+
 ### Perform GraphQL queries
 
 If you want to perform GraphQL queries on the schema without going through a schema, you can use `Schema.execute()`. This method can take the following parameters:

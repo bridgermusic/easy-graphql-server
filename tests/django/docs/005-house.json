@@ -27,28 +27,59 @@
 ;
 
 {
+  "data": {
+    "houses": [
+      {
+        "id": 1,
+        "location": "over the rainbow",
+        "owner": null
+      },
+      {
+        "id": 2,
+        "location": "Paris",
+        "owner": {
+          "id": 1
+        }
+      },
+      {
+        "id": 3,
+        "location": "Aarhus",
+        "owner": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}
+
+;
+
+{
+  "data": {
+    "houses": [
+      {
+        "id": 2,
+        "location": "Paris",
+        "owner": {
+          "id": 1
+        }
+      },
+      {
+        "id": 3,
+        "location": "Aarhus",
+        "owner": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}
+
+;
+
+{
     "data": {
-        "houses": [
-            {
-                "id": 1,
-                "location": "over the rainbow",
-                "owner": null
-            },
-            {
-                "id": 2,
-                "location": "Paris",
-                "owner": {
-                    "id": 1
-                }
-            },
-            {
-                "id": 3,
-                "location": "Aarhus",
-                "owner": {
-                    "id": 1
-                }
-            }
-        ]
+        "houses": []
     }
 }
 
@@ -60,7 +91,7 @@
   },
   "errors": [
     {
-      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"UPDATE\", \"authenticated_user\": \"None\", \"path\": [\"mutation\", \"update_house\", \"owner\"]}}",
+      "message": "{\"error\": \"NOT_FOUND\", \"payload\": {\"filters\": {\"id\": 1}}}",
       "locations": [
         {
           "line": 2,
@@ -98,7 +129,7 @@
             "id": 1,
             "location": "over the rainbow",
             "owner": {
-                "id": 3,
+                "id": 4,
                 "first_name": "Beth",
                 "last_name": "Doe"
             }
@@ -121,10 +152,16 @@
         "id": 2,
         "first_name": "",
         "last_name": "",
-        "username": "admin@example.com"
+        "username": "superadmin@example.com"
       },
       {
         "id": 3,
+        "first_name": "",
+        "last_name": "",
+        "username": "admin@example.com"
+      },
+      {
+        "id": 4,
         "first_name": "Beth",
         "last_name": "Doe",
         "username": "beth.doe@example.com"

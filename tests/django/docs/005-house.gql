@@ -26,6 +26,24 @@ mutation {
 
 ;
 
+# USER: superadmin@example.com
+query {
+  houses (id__gte: 1) {
+    id, location, owner { id }
+  }
+}
+
+;
+
+# USER: john.doe@example.com
+query {
+  houses (id__gte: 1) {
+    id, location, owner { id }
+  }
+}
+
+;
+
 query {
   houses (id__gte: 1) {
     id, location, owner { id }
@@ -50,7 +68,6 @@ mutation {
 ;
 
 # USER: admin@example.com
-
 mutation {
   update_house (
     id: 1
@@ -67,6 +84,7 @@ mutation {
 
 ;
 
+# USER: admin@example.com
 mutation {
   update_house (
     id: 1

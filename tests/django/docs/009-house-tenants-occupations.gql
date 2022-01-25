@@ -1,3 +1,4 @@
+# USER: admin@example.com
 query {
   house (id: 1) {
     tenants {
