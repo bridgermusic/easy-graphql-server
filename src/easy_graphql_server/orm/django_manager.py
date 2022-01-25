@@ -308,6 +308,7 @@ class DjangoModelManager(ModelManager):
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
             enforce_permissions=True):
+            # pylint: disable=R0913 # Too many arguments
         # enforce permissions when requested
         if enforce_permissions:
             self.model_config.enforce_permissions(
