@@ -85,8 +85,17 @@ class DjangoModelManager(ModelManager):
                     **data.pop(field_name))
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
+        # extract data for custom fields
+        custom_fields_data = self._extract_custom_fields_data(
+            operation = Operation.CREATE,
+            data = data)
         # instance itself
         instance = self.orm_model(**data)
+        # custom fields definition
+        self._create_or_update_custom_fields(
+            instance = instance,
+            authenticated_user = authenticated_user,
+            data = custom_fields_data)
         # enforce permissions & save
         self.model_config.enforce_permissions(
             operation = Operation.CREATE,
@@ -197,9 +206,18 @@ class DjangoModelManager(ModelManager):
             # related fields
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
+        # extract data for custom fields
+        custom_fields_data = self._extract_custom_fields_data(
+            operation = Operation.CREATE,
+            data = data)
         # direct attributes
         for key, value in data.items():
             setattr(instance, key, value)
+        # custom fields definition
+        self._create_or_update_custom_fields(
+            instance = instance,
+            authenticated_user = authenticated_user,
+            data = custom_fields_data)
         # enforce permissions & save
         self.model_config.enforce_permissions(
             operation = Operation.UPDATE,
@@ -400,7 +418,7 @@ class DjangoModelManager(ModelManager):
         # browse fields in GraphQL selection
         for field_name, graphql_subselection in graphql_selection.items():
             # no subselection, this is a direct field
-            if graphql_subselection is None:
+            if graphql_subselection is None and field_name not in self.fields_info.custom:
                 only.append(field_prefix + field_name)
             # there is a subselection, and it is a foreign key
             elif field_name in self.fields_info.foreign:

@@ -5,11 +5,23 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
+class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
+    name = 'same_as_birth_date'
+    format = easy_graphql_server.Model('person').fields.birth_date
+    @staticmethod
+    def read_one(instance, authenticated_user, graphql_selection):
+        return instance.birth_date
+    @staticmethod
+    def create_one(instance, authenticated_user, data):
+        instance.birth_date = data
+    update_one = create_one
+
 class ExposedPerson(easy_graphql_server.ExposedModel):
     orm_model = Person
     plural_name = 'people'
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
         'houses', 'home', 'daily_occupations')
+    custom_fields = [ExposedPersonSameAsBirthdate]
 
 class ExposedMe(easy_graphql_server.ExposedQuery):
     name = 'me'

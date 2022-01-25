@@ -19,6 +19,8 @@ class ModelManager:
         self.model_config = model_config
         self.fields_info = self.get_fields_info()
         self.fields_info.compute_linked()
+        for custom_field in self.model_config.custom_fields:
+            self.fields_info.custom.add(custom_field.name)
 
     # metadata extraction
 
@@ -110,10 +112,25 @@ class ModelManager:
 
     #
 
+    def _extract_custom_fields_data(self, operation, data):
+        result = {}
+        for custom_field in self.model_config.custom_fields:
+            if custom_field.name in data and custom_field.can_perfom(operation):
+                result[custom_field.name] = data.pop(custom_field.name)
+        return result
+
+    def _create_or_update_custom_fields(self, instance, authenticated_user, data):
+        for custom_field in self.model_config.custom_fields:
+            if custom_field.name in data:
+                custom_field.perform_one_creation(
+                    instance = instance,
+                    authenticated_user = authenticated_user,
+                    data = data[custom_field.name])
+
     def _read_custom_fields(self, instance, authenticated_user, graphql_selection):
         result = {}
         for custom_field in self.model_config.custom_fields:
-            if custom_field.name in graphql_selection:
+            if custom_field.name in graphql_selection and custom_field.can_perfom(Operation.READ):
                 result[custom_field.name] = custom_field.perform_one_read(
                     instance = instance,
                     authenticated_user = authenticated_user,
