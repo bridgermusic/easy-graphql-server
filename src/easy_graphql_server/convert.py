@@ -39,19 +39,29 @@ PYTHON_GRAPHQL_TYPES_MAPPING = {
 _enums_cache = {}
 
 
+def to_graphql_enum_key(name, capitalize=True):
+    """
+        Convert an enum name to its GraphQL-compatible counterpart
+
+        (only uppercase letters, underscores and digits, cannot start with a digit)
+    """
+    key = re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', name)
+    if capitalize:
+        return key.upper()
+    return key
+
 def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=True, schema=None):
+    # pylint: disable=W0613 # Unused argument 'schema'
     """
         Create a `GraphQLEnumType` from a list of choices.
 
         Choices must presented as a list of key-value pairs.
     """
-    key = (schema, prefix)
-    if key in _enums_cache:
-        graphql_type = _enums_cache[key]
+    if prefix in _enums_cache:
+        graphql_type = _enums_cache[prefix]
     else:
-        transform = lambda string: string.upper() if capitalize else lambda string: string
-        graphql_type = _enums_cache[key] = GraphQLEnumType(f'{prefix}__enum_type', {
-            transform(re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', key)): GraphQLEnumValue(key, value)
+        graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
+            to_graphql_enum_key(key, capitalize): GraphQLEnumValue(key, value)
             for key, value in choices
         }, description=description)
     return graphql_type

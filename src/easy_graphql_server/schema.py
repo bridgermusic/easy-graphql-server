@@ -73,7 +73,7 @@ class Schema:
             Return GraphQL schema description in JSON format.
         """
         result = self.execute(
-            get_introspection_query(descriptions=with_descriptions))
+            get_introspection_query(descriptions=with_descriptions, directive_is_repeatable=True))
         return result.data
 
     def expose(self, cls):
