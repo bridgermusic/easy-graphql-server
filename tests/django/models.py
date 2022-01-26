@@ -66,12 +66,6 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
         # one can always manipulate one's own account
         return self.id == authenticated_user.id
 
-    def __str__(self):
-        return self.username
-
-    def __repr__(self):
-        return f'<Person first_name={repr(self.first_name)} last_name={repr(self.last_name)} birth_date={self.birth_date}>'
-
 
 class House(models.Model):
     class Meta:
