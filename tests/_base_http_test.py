@@ -140,4 +140,5 @@ class BaseHttpTest(unittest.TestCase):
         self.assertEqual(response.code, 200)
         self.assertTrue(response.headers['Content-Type'].startswith('text/html'))
         graphiql_page_path = pathlib.Path(__file__).parent.parent / 'src/easy_graphql_server/webserver/static/graphiql.html'
-        self.assertEqual(response.data.decode(), open(graphiql_page_path, 'rt').read())
+        with open(graphiql_page_path, 'rt') as graphiql_page_file:
+            self.assertEqual(response.data.decode(), graphiql_page_file.read())

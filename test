@@ -2,9 +2,16 @@
 
 set -e
 
+# test "under the hood"
 PYTHONPATH=src python -m unittest -v tests.test_introspection
-PYTHONPATH=src python -m unittest -v tests.test_data_methods
-# PYTHONPATH=src python -m unittest -v tests.test_http_flask.FlaskHttpTest
-PYTHONPATH=src python django_tests_manage.py test tests.test_http_django.DjangoHttpTest
+
+# test schemata
 PYTHONPATH=src python django_tests_manage.py test tests.test_schema_django
+
+# test HTTP
+PYTHONPATH=src python -m unittest -v tests.test_http_flask.FlaskHttpTest
+PYTHONPATH=src python django_tests_manage.py test tests.test_http_django.DjangoHttpTest
+
+# data-driven tests
+PYTHONPATH=src python -m unittest -v tests.test_data_methods
 PYTHONPATH=src python django_tests_manage.py test tests.test_data_django
