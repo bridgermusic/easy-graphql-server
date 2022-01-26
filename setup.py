@@ -41,6 +41,7 @@ setup(
             'faker==11.1.0',
             'flask==2.0.2',
             'flask-login==0.5.0',
+            'sqlalchemy==1.4.31',
         ],
     },
     python_requires='>=3.6,<4',
