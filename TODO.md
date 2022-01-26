@@ -1,6 +1,5 @@
 # TODO
 
-- expose schema with Flask
 - limit/offset in model collection queries
 - order in model collection queries
 - add SQLAlchemy support
@@ -13,6 +12,7 @@
 
 # DONE
 
+- expose schema with Flask
 - test HTTP GraphQL queries with GET method
 - check generated type names (from model exposition) in tests
 - allow custom fields for models (C, U)
