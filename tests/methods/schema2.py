@@ -74,3 +74,14 @@ class DummyCollectionOutput(schema.ExposedQuery):
                 for i in range(max_index)
             ]
         }
+
+
+class DummyUser(schema.ExposedQuery):
+    name = 'me'
+    output_format = {
+        'username': str,
+    }
+    pass_authenticated_user = True
+    @staticmethod
+    def method(authenticated_user):
+        return authenticated_user.username

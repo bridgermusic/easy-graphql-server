@@ -66,3 +66,15 @@ schema.expose_query(
         ]
     }
 )
+
+schema.expose_query(
+    name = 'me',
+    output_format = {
+        'id': int,
+        'username': str,
+        'is_superuser': bool,
+        'is_staff': bool,
+    },
+    pass_authenticated_user = True,
+    method = lambda authenticated_user: authenticated_user
+)

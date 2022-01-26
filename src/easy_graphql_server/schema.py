@@ -187,6 +187,30 @@ class Schema:
         from .webserver.django_schema_view import DjangoSchemaView
         return DjangoSchemaView(schema=self).view
 
+    def as_flask_view(self):
+        """
+            Expose schema as a Flask view.
+
+            Example:
+
+            ```python
+            from flask import Flask
+            import easy_graphql_server
+
+            schema = easy_graphql_server.Schema()
+
+            app = Flask()
+
+            app.add_url_rule(
+                rule = '/graphql',
+                endpoint = 'graphql',
+                view_func = schema.as_flask_view())
+            ```
+        """
+        # pylint: disable=C0415 # Import outside toplevel
+        from .webserver.flask_schema_view import FlaskSchemaView
+        return FlaskSchemaView(schema=self).view
+
     # private attributes & methods
 
     # pylint: disable=R0913 # Too many arguments

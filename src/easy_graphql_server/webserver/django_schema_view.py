@@ -26,7 +26,7 @@ class DjangoSchemaView(SchemaView):
             method = request.method,
             headers = request.headers,
             body = request.body,
-            query = request.GET,
+            query = dict(request.GET.items()),
             authenticated_user = authenticated_user,
         )
         # return response

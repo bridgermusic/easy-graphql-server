@@ -39,6 +39,8 @@ setup(
         'tests': [
             'django==3.2',
             'faker==11.1.0',
+            'flask==2.0.2',
+            'flask-login==0.5.0',
         ],
     },
     python_requires='>=3.6,<4',
