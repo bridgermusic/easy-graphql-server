@@ -79,7 +79,7 @@ class SchemaView:
                 return self.graphiql_page
             try:
                 data = {
-                    'query': query.get('operationName'),
+                    'query': query.get('query'),
                     'variables': json.loads(query.get('variables', 'null')),
                     'operationName': query.get('operationName'),
                 }
@@ -98,7 +98,7 @@ class SchemaView:
                 'Mandatory parameter "query" should be a string',
             }]}, 400
         # extract & validate variables mapping
-        variables = data.get('variables', {})
+        variables = data.get('variables') or {}
         if not isinstance(variables, dict):
             return {'errors': [{'message':
                 'Optional parameter "variables" should be an mapping',

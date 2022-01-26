@@ -4,7 +4,7 @@ import django.contrib.auth
 from django.conf import settings
 
 
-class BaseTestCase(django.test.TransactionTestCase):
+class BaseDjangoTest(django.test.TransactionTestCase):
     reset_sequences = True
     databases = ['default']
 
@@ -38,15 +38,17 @@ class BaseTestCase(django.test.TransactionTestCase):
         return http_client
 
     def request(self, method, path, data=None, headers=None, username=None):
+        method = method.lower()
         client = self._get_http_client(username=username)
-        client_method = getattr(client, method.lower())
+        client_method = getattr(client, method)
         # initialize arguments
         kwargs = {
             'path': path,
         }
         # data
         if data:
-            kwargs['content_type'] = 'application/json'
+            if method != 'get':
+                kwargs['content_type'] = 'application/json'
             kwargs['data'] = data
         # headers
         if headers:
@@ -58,13 +60,4 @@ class BaseTestCase(django.test.TransactionTestCase):
             data = response.content,
             code = response.status_code,
             headers = response.headers,
-        )
-
-    def request_graphql_endpoint(self, data, username=None):
-        return self.request(
-            method = 'post',
-            path = self.endpoint_url,
-            data = json.dumps(data),
-            headers = {'Content-Type': 'application/json'},
-            username = username,
         )

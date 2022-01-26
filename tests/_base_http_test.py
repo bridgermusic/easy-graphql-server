@@ -1,8 +1,9 @@
+import unittest
 import pathlib
 import json
 
 
-class BaseHttpTest:
+class BaseHttpTest(unittest.TestCase):
 
     class HttpResponse:
         def __init__(self, data, code, headers):
@@ -17,13 +18,32 @@ class BaseHttpTest:
         raise NotImplementedError()
 
     def request_graphql_endpoint(self, data, username=None):
-        raise NotImplementedError()
+        return self.request(
+            method = 'post',
+            path = self.endpoint_url,
+            data = data,
+            username = username,
+        )
 
-    def test_endpoint(self):
-        # ensure only POST method can be performed
+    def test_endpoint_forbidden_methods(self):
+        # ensure only GET and POST method can be performed
         for method in ('delete', 'patch', 'put'):
             response = self.request(method, self.endpoint_url)
             self.assertEqual(response.code, 405)
+
+    def test_endpoint_get(self):
+        # try to send empty request
+        response = self.request('get', self.endpoint_url)
+        self.assertEqual(response.code, 400)
+        # try to send wrong data
+        response = self.request('get', self.endpoint_url, {'query': []})
+        self.assertEqual(response.code, 400)
+        # try to send an empty query
+        response = self.request('get', self.endpoint_url, {'query': ''})
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.data['errors'][0]['message'], 'Syntax Error: Unexpected <EOF>.')
+
+    def test_endpoint_post(self):
         # try to send empty request body
         response = self.request('post', self.endpoint_url)
         self.assertEqual(response.code, 400)
