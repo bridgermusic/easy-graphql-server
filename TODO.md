@@ -1,5 +1,6 @@
 # TODO
 
+- expose schema with Flask
 - limit/offset in model collection queries
 - order in model collection queries
 - `case_manager` in Schema

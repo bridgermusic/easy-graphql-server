@@ -73,8 +73,20 @@ class DummyCollectionOutput(ExposedQuery):
         }
 
 
+class DummyUser(ExposedQuery):
+    name = 'me'
+    output_format = {
+        'username': str,
+    }
+    pass_authenticated_user = True
+    @staticmethod
+    def method(authenticated_user):
+        return authenticated_user.username
+
+
 schema = Schema()
 schema.expose(DummyDoubleMutation)
 schema.expose(DummyDoubleQuery)
 schema.expose(DummyCollectionInput)
 schema.expose(DummyCollectionOutput)
+schema.expose(DummyUser)
