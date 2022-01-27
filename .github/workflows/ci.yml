@@ -31,27 +31,34 @@ jobs:
         run: |
           # time sudo rm -rf /usr/share/dotnet
           time sudo rm -rf /opt/ghc
-          time sudo rm -rf "/usr/local/share/boost"
+          time sudo rm -rf /usr/local/share/boost
           time sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
       # Prepare installation
 
       - name: Prepare
         run: |
-          time python -m pip install --upgrade pip
           time ./setup.py egg_info
 
       # Use cache for dependencies (see https://medium.com/ai2-blog/python-caching-in-github-actions-e9452698e98d)
 
       - name: Cache
+        id: cache
         uses: actions/cache@v2
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ env.pythonLocation }}-${{ hashFiles('src/*.egg-info/requires.txt') }}
+          path: ./VENV
+          key: VENV_${{ hashFiles('src/*.egg-info/requires.txt') }}
+          restore-keys: |
+            VENV_${{ hashFiles('src/*.egg-info/requires.txt') }}
+            VENV_
+            VENV
 
       # Setup dependencies
       - name: Dependencies
         run: |
+          time python -m venv VENV
+          time source VENV/bin/activate
+          time python -m pip install --upgrade pip
           time pip install pylint
           time pip install `grep -v '^\[' src/*.egg-info/requires.txt`
 
@@ -59,10 +66,12 @@ jobs:
 
       - name: Lint
         run: |
+          source VENV/bin/activate
           ./lint
 
       # Test code
 
       - name: Test
         run: |
+          source VENV/bin/activate
           ./test
