@@ -3,8 +3,8 @@
 """
 
 from .operations import Operation
-from .convert import to_graphql_objecttype, to_graphql_argument
-from .types import Mandatory
+from .conversion import to_graphql_objecttype, to_graphql_argument
+from .types import Required
 from .orm import ORM
 from .model_config_custom_field import ModelConfigCustomField
 from . import exceptions, introspection
@@ -26,15 +26,27 @@ class ModelConfig:
             can_create=True, can_read=True, can_update=True, can_write=True, can_delete=True,
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
-            only_when_child_of=None, force_authenticated_user=False,
-            ensure_permissions=None, filter_by_authenticated_user=None,
+            only_when_child_of=None, require_authenticated_user=False,
+            has_permission=None, filter_by_user=None,
             custom_fields=None):
         # store raw options
         self.schema = schema
-        self.force_authenticated_user = force_authenticated_user
+        self.require_authenticated_user = require_authenticated_user
         self.only_when_child_of = only_when_child_of
-        self.ensure_permissions = ensure_permissions
-        self.filter_by_authenticated_user = filter_by_authenticated_user
+        # permission methods
+        self.has_permission_methods = []
+        if has_permission:
+            self.has_permission_methods.append(has_permission)
+        if hasattr(orm_model, 'has_permission'):
+            self.has_permission_methods.append(
+                lambda instance, authenticated_user, operation, data:
+                    instance.has_permission(authenticated_user, operation, data)
+            )
+        self.filter_by_user_methods = []
+        if filter_by_user:
+            self.filter_by_user_methods.append(filter_by_user)
+        if hasattr(orm_model, 'filter_by_user'):
+            self.filter_by_user_methods.append(orm_model.filter_by_user)
         # name
         self.name = name or schema.case_manager.convert(orm_model.__name__)
         self.plural_name = plural_name or f'{self.name}s'
@@ -117,7 +129,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                force_authenticated_user = self.force_authenticated_user,
+                require_authenticated_user = self.require_authenticated_user,
             )
         # expose read methods
         if self.available_operations[Operation.READ]:
@@ -131,7 +143,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                force_authenticated_user = self.force_authenticated_user,
+                require_authenticated_user = self.require_authenticated_user,
             )
             # fetch many instances
             self.schema.expose_query(
@@ -143,7 +155,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                force_authenticated_user = self.force_authenticated_user,
+                require_authenticated_user = self.require_authenticated_user,
             )
         # expose UPDATE method
         if self.available_operations[Operation.UPDATE]:
@@ -163,7 +175,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                force_authenticated_user = self.force_authenticated_user,
+                require_authenticated_user = self.require_authenticated_user,
             )
         # expose delete method
         if self.available_operations[Operation.DELETE]:
@@ -177,7 +189,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                force_authenticated_user = self.force_authenticated_user,
+                require_authenticated_user = self.require_authenticated_user,
             )
 
     # concatenate
@@ -258,7 +270,7 @@ class ModelConfig:
                 if field_name in fields_info.mandatory:
                     if linked_field is not None and field_name == linked_field.value_field_name:
                         continue
-                    mapping[field_name] = Mandatory(graphql_type)
+                    mapping[field_name] = Required(graphql_type)
         # custom fields
         if with_custom_fields:
             for custom_field in self.custom_fields:
@@ -301,49 +313,43 @@ class ModelConfig:
             return True
         return issubclass(orm_model, self.only_when_child_of)
 
-    def check_permissions(self, operation, instance, authenticated_user=None, data=None):
+    def filter_by_user(self, queryset, authenticated_user):
         """
-            Returns a `bool` indicating whether or not the requested operation can
+            Returns a Django `Queryset`, which is a filtered version of the input `queryset`
+            only showing what is available to the `authenticated_user`.
+        """
+        for filter_by_user_method in self.filter_by_user_methods:
+            queryset = filter_by_user_method(queryset, authenticated_user)
+        return queryset
+
+    def has_permission(self, instance, authenticated_user, operation, data={}):
+        """
+            Return a boolean indicating whether or not the requested operation can
             be performed on the instance.
 
             `data` is provided when the operation is either `Operation.CREATE` or
             `Operation.UPDATE`. It is a dictionary containing the new provided data
             for the instance.
         """
-        if self.ensure_permissions:
-            if not self.ensure_permissions(instance, authenticated_user, operation, data):
-                return False
-        if hasattr(instance, 'ensure_permissions'):
-            if not instance.ensure_permissions(authenticated_user, operation, data):
+        for has_permission_method in self.has_permission_methods:
+            if not has_permission_method(instance, authenticated_user, operation, data):
                 return False
         return True
 
-    def filter(self, queryset, authenticated_user):
+    def ensure_permission(self, instance, authenticated_user, operation,
+            data={}, graphql_path=None):
         """
-            Returns a Django `Queryset`, which is a filtered version of the input `queryset`
-            only showing what is available to the `authenticated_user`.
-        """
-        if self.filter_by_authenticated_user:
-            return self.filter_by_authenticated_user(queryset, authenticated_user)
-        if hasattr(self.orm_model_manager.orm_model, 'filter_by_authenticated_user'):
-            return self.orm_model_manager.orm_model.filter_by_authenticated_user(
-                queryset, authenticated_user)
-        return queryset
+            Raise an `exceptions.ForbiddenError` when `has_permission()` returns
+            `False` with the same parameters, aka when the requested operation cannot
+            be performed on the instance.
 
-    def enforce_permissions(self, operation, instance, authenticated_user,
-            data=None, graphql_path=None):
-        """
-            Raise an `exceptions.ForbiddenError` when `check_permissions()` returns
-            `False` with the same parameters.
+            `data` is provided when the operation is either `Operation.CREATE` or
+            `Operation.UPDATE`. It is a dictionary containing the new provided data
+            for the instance.
 
             The `graphql_path` parameter indicates where the permission was denied.
         """
-        permitted = self.check_permissions(
-            operation = operation,
-            instance = instance,
-            authenticated_user = authenticated_user,
-            data = data)
-        if not permitted:
+        if not self.has_permission(instance, authenticated_user, operation, data):
             raise exceptions.ForbiddenError(
                 operation = operation,
                 authenticated_user = authenticated_user,

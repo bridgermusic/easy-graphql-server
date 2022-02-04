@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True)
 
 class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
     name = 'same_as_birth_date'
@@ -27,7 +27,7 @@ class ExposedPerson(schema.ExposedModel):
 
 class ExposedMe(schema.ExposedQuery):
     name = 'me'
-    force_authenticated_user = True
+    require_authenticated_user = True
     pass_authenticated_user = True
     output_format = easy_graphql_server.Model('person').output_format + {
         'is_superuser': bool, 'is_staff': bool}
@@ -64,4 +64,4 @@ class ExposedHouse(schema.ExposedModel):
 
 class ExposedBankAccount(schema.ExposedModel):
     orm_model = BankAccount
-    force_authenticated_user = True
+    require_authenticated_user = True

@@ -1,10 +1,10 @@
-from easy_graphql_server import Schema, Mandatory, ExposedMutation, ExposedQuery
+from easy_graphql_server import Schema, Required, ExposedMutation, ExposedQuery
 
 
 class DummyDoubleMutation(ExposedMutation):
     name = 'dummy_double'
     input_format = {
-        'input_text': Mandatory(str),
+        'input_text': Required(str),
         'input_number': float,
     }
     output_format = {
@@ -22,7 +22,7 @@ class DummyDoubleMutation(ExposedMutation):
 class DummyDoubleQuery(ExposedQuery):
     name = 'dummy_retrieve'
     input_format = {
-        'input_identifier': Mandatory(int),
+        'input_identifier': Required(int),
     }
     output_format = {
         'output_identifier': int,
@@ -53,7 +53,7 @@ class DummyCollectionInput(ExposedQuery):
 class DummyCollectionOutput(ExposedQuery):
     name = 'dummy_collection_output'
     input_format = {
-        'max_index': Mandatory(int),
+        'max_index': Required(int),
     }
     output_format = {
         'max_index': int,
@@ -84,7 +84,7 @@ class DummyUser(ExposedQuery):
         return authenticated_user.username
 
 
-schema = Schema()
+schema = Schema(debug=True)
 schema.expose(DummyDoubleMutation)
 schema.expose(DummyDoubleQuery)
 schema.expose(DummyCollectionInput)

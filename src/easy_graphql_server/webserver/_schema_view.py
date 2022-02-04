@@ -95,7 +95,7 @@ class SchemaView:
         query = data.get('query')
         if not isinstance(query, str):
             return {'errors': [{'message':
-                'Mandatory parameter "query" should be a string',
+                'Required parameter "query" should be a string',
             }]}, 400
         # extract & validate variables mapping
         variables = data.get('variables') or {}

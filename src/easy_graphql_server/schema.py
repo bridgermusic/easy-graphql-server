@@ -13,7 +13,7 @@ from graphql.utilities import get_introspection_query # pylint: disable=E0611,E0
 from graphql.graphql import graphql_sync
 
 from . import exceptions, exposition, introspection
-from .convert import to_graphql_type, to_graphql_argument
+from .conversion import to_graphql_type, to_graphql_argument
 from .model_config import ModelConfig
 from .casing import Casing
 from .context import ContextValue
@@ -38,13 +38,15 @@ class Schema:
 
     # public methods
 
-    def __init__(self, casing=Casing.SNAKE):
+    def __init__(self, debug=False, casing=Casing.SNAKE):
         self.methods = defaultdict(dict)
         self.subclasses = []
         self.dirty = True
         self.graphql_schema = None
         self.models_configs = []
+        # options
         self.case_manager = casing.value
+        self.debug = debug
         # abstract parent classes
         class Exposed(exposition.Exposed):
             # pylint: disable=R0903 # Too few public methods
@@ -216,7 +218,7 @@ class Schema:
     # pylint: disable=R0913 # Too many arguments
     def _expose_method(self, type_, name, method, input_format=None, output_format=None,
             pass_graphql_selection=False, pass_graphql_path=False,
-            pass_authenticated_user=False, force_authenticated_user=False):
+            pass_authenticated_user=False, require_authenticated_user=False):
         # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
         self.methods[type_][name] = GraphQLField(
         # output format
@@ -251,7 +253,7 @@ class Schema:
                 if pass_authenticated_user is True else
                 pass_authenticated_user
             ),
-            force_authenticated_user = force_authenticated_user,
+            require_authenticated_user = require_authenticated_user,
         ),
         )
         # schema is not up to date anymore
@@ -318,13 +320,13 @@ class Schema:
 
     def _make_callback(self, type_, method, # pylint: disable=R0913 # Too many arguments
             pass_graphql_selection, pass_graphql_path,
-            pass_authenticated_user, force_authenticated_user):
+            pass_authenticated_user, require_authenticated_user):
         def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
             try:
                 # ensure authenticated user when mandatory
-                if force_authenticated_user or pass_authenticated_user:
+                if require_authenticated_user or pass_authenticated_user:
                     authenticated_user = info.context.authenticated_user
-                if force_authenticated_user and not authenticated_user:
+                if require_authenticated_user and not authenticated_user:
                     raise exceptions.UnauthenticatedError()
                 # pass parameters
                 if pass_authenticated_user:
@@ -339,22 +341,7 @@ class Schema:
             except exceptions.BaseError:
                 raise
             except Exception as error:
-                traceback = getattr(error, '__traceback__')
-                print('\n\n' + 80 * '*' + '\n*')
-                print(f'* {type(error).__qualname__}')
-                print('*')
-                for arg in error.args:
-                    print(f'* {arg}')
-                print('*')
-                while traceback:
-                    # pylint: disable=E1101 # Class 'tb_frame' has no 'f_code' member
-                    print(f'*  {traceback.tb_frame.f_code.co_filename}:{traceback.tb_lineno}')
-                    traceback = traceback.tb_next
-                print('*\n' + 80 * '*' + '\n')
-                raise Exception(
-                    f'{type(error).__name__}: '
-                    + '; '.join(map(str, error.args or []))
-                ) from error
+                raise exceptions.InternalError(error if self.debug else None)
         return callback
 
     # using GraphQL core AST tree to return the GraphQL selection

@@ -29,33 +29,33 @@ class BaseHttpTest(unittest.TestCase):
         # ensure only GET and POST method can be performed
         for method in ('delete', 'patch', 'put'):
             response = self.request(method, self.endpoint_url)
-            self.assertEqual(response.code, 405)
+            self.assertEqual(405, response.code)
 
     def test_endpoint_get(self):
         # try to send empty request
         response = self.request('get', self.endpoint_url)
-        self.assertEqual(response.code, 400)
+        self.assertEqual(400, response.code)
         # try to send wrong data
         response = self.request('get', self.endpoint_url, {'query': []})
-        self.assertEqual(response.code, 400)
+        self.assertEqual(400, response.code)
         # try to send an empty query
         response = self.request('get', self.endpoint_url, {'query': ''})
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data['errors'][0]['message'], 'Syntax Error: Unexpected <EOF>.')
+        self.assertEqual(200, response.code)
+        self.assertEqual('{"error": "GRAPHQL", "payload": {"message": "Syntax Error: Unexpected <EOF>."}}', response.data['errors'][0]['message'])
 
     def test_endpoint_post(self):
         # try to send empty request body
         response = self.request('post', self.endpoint_url)
-        self.assertEqual(response.code, 400)
+        self.assertEqual(400, response.code)
         # try to send properly formatted JSON, with wrong data in it
         response = self.request_graphql_endpoint({})
-        self.assertEqual(response.code, 400)
+        self.assertEqual(400, response.code)
         response = self.request_graphql_endpoint({'query': []})
-        self.assertEqual(response.code, 400)
+        self.assertEqual(400, response.code)
         # try to send an empty query
         response = self.request_graphql_endpoint({'query': ''})
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data['errors'][0]['message'], 'Syntax Error: Unexpected <EOF>.')
+        self.assertEqual(200, response.code)
+        self.assertEqual('{"error": "GRAPHQL", "payload": {"message": "Syntax Error: Unexpected <EOF>."}}', response.data['errors'][0]['message'])
         # try to send a proper query
         response = self.request_graphql_endpoint({'query': '''
             query {
@@ -75,8 +75,8 @@ class BaseHttpTest(unittest.TestCase):
                 }
             }
         '''})
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data, {'data': {
+        self.assertEqual(200, response.code)
+        self.assertEqual({'data': {
             'dummy_retrieve':
                 {'output_identifier': 1, 'output_name': 'dummy_1'},
             'dummy_collection_input':
@@ -87,7 +87,7 @@ class BaseHttpTest(unittest.TestCase):
                     {'index': 1, 'identifier': 's1'},
                     {'index': 2, 'identifier': 's2'},
                 ]},
-        }})
+        }}, response.data)
 
     def test_authentication(self):
         # regular user
@@ -98,8 +98,8 @@ class BaseHttpTest(unittest.TestCase):
                 }
             }
         '''}, username='test@example.com')
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data, {'data': {'me': {'username': 'test@example.com'}}})
+        self.assertEqual(200, response.code)
+        self.assertEqual({'data': {'me': {'username': 'test@example.com'}}}, response.data)
         # staff user
         response = self.request_graphql_endpoint({'query': '''
             query {
@@ -111,10 +111,10 @@ class BaseHttpTest(unittest.TestCase):
                 }
             }
         '''}, username='staff@example.com')
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data, {'data': {'me': {
+        self.assertEqual(200, response.code)
+        self.assertEqual({'data': {'me': {
             'id': 2, 'username': 'staff@example.com', 'is_staff': True, 'is_superuser': False}
-        }})
+        }}, response.data)
         # super user
         response = self.request_graphql_endpoint({'query': '''
             query {
@@ -126,10 +126,10 @@ class BaseHttpTest(unittest.TestCase):
                 }
             }
         '''}, username='admin@example.com')
-        self.assertEqual(response.code, 200)
-        self.assertEqual(response.data, {'data': {'me': {
+        self.assertEqual(200, response.code)
+        self.assertEqual({'data': {'me': {
             'id': 3, 'username': 'admin@example.com', 'is_staff': False, 'is_superuser': True}
-        }})
+        }}, response.data)
 
     def test_graphiql(self):
         response = self.request(
@@ -137,8 +137,8 @@ class BaseHttpTest(unittest.TestCase):
             path = self.endpoint_url,
             headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'},
         )
-        self.assertEqual(response.code, 200)
+        self.assertEqual(200, response.code)
         self.assertTrue(response.headers['Content-Type'].startswith('text/html'))
         graphiql_page_path = pathlib.Path(__file__).parent.parent / 'src/easy_graphql_server/webserver/static/graphiql.html'
         with open(graphiql_page_path, 'rt') as graphiql_page_file:
-            self.assertEqual(response.data.decode(), graphiql_page_file.read())
+            self.assertEqual(graphiql_page_file.read(), response.data.decode())

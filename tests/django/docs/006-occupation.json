@@ -75,14 +75,17 @@
   "data": null,
   "errors": [
     {
-      "message": "Cannot query field 'create_daily_occupation' on type 'Mutation'.",
+      "message": "{\"error\": \"METHOD_NOT_FOUND\", \"payload\": {\"method_name\": \"create_daily_occupation\", \"suggestions\": [], \"path\": [\"mutation\", \"create_daily_occupation\"]}}",
       "locations": [
         {
           "line": 3,
           "column": 3
         }
       ],
-      "path": null
+      "path": [
+        "mutation",
+        "create_daily_occupation"
+      ]
     }
   ]
 }
@@ -93,14 +96,17 @@
   "data": null,
   "errors": [
     {
-      "message": "Cannot query field 'update_daily_occupation' on type 'Mutation'.",
+      "message": "{\"error\": \"METHOD_NOT_FOUND\", \"payload\": {\"method_name\": \"update_daily_occupation\", \"suggestions\": [], \"path\": [\"mutation\", \"update_daily_occupation\"]}}",
       "locations": [
         {
           "line": 3,
           "column": 3
         }
       ],
-      "path": null
+      "path": [
+        "mutation",
+        "update_daily_occupation"
+      ]
     }
   ]
 }

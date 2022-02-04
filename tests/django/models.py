@@ -56,7 +56,7 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
                     )
                 ]})
 
-    def ensure_permissions(self, authenticated_user, operation, data):
+    def has_permission(self, authenticated_user, operation, data):
         # unauthenticated requests can only create or read people
         if authenticated_user is None:
             return operation in (Operation.CREATE, Operation.READ)
@@ -85,7 +85,7 @@ class House(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='houses')
-    def filter_by_authenticated_user(queryset, authenticated_user):
+    def filter_by_user(queryset, authenticated_user):
         if not authenticated_user:
             return queryset.none()
         if authenticated_user.is_superuser:
@@ -123,18 +123,18 @@ class BankAccount(models.Model):
         on_delete=models.CASCADE,
         related_name='bank_accounts')
 
-    def ensure_permissions(self, authenticated_user, operation, data):
+    def has_permission(self, authenticated_user, operation, data):
         if authenticated_user.is_superuser:
             return True
         return self.owner_id == authenticated_user.id
 
     @classmethod
-    def filter_permitted(cls, authenticated_user):
+    def filter_for_user(cls, authenticated_user, base_queryset):
         if not authenticated_user:
-            return cls.objects.none()
+            return base_queryset.none()
         if authenticated_user.is_superuser:
-            return cls.objects
-        return cls.objects.filter(owner_id = authenticated_user.id)
+            return base_queryset
+        return base_queryset.filter(owner_id = authenticated_user.id)
 
 
 template_database = None

@@ -1,12 +1,12 @@
 """
-    This module defines `Mandatory` class and `JSONString` type.
+    This module defines `Required` class and `JSONString` type.
 """
 
 from .graphql_types import JSONString # pylint: disable=W0611 # Unused import
 from .operations import Operation
 
 
-class Mandatory:
+class Required:
     # pylint: disable=R0903 # Too few public methods
     """
         Non-GraphQL wrapper type, to replace NonNull in mappings or when using

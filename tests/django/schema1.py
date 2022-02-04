@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True)
 
 def create_or_update_person_birth_date(instance, authenticated_user, data):
     instance.birth_date = data
@@ -27,7 +27,7 @@ schema.expose_model(
 
 schema.expose_query(
     name = 'me',
-    force_authenticated_user = True,
+    require_authenticated_user = True,
     pass_authenticated_user = True,
     output_format = easy_graphql_server.Model('person').output_format + {
         'is_superuser': bool, 'is_staff': bool,
@@ -65,5 +65,5 @@ schema.expose_model(
 
 schema.expose_model(
     orm_model = BankAccount,
-    force_authenticated_user = True,
+    require_authenticated_user = True,
 )

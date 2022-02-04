@@ -14,7 +14,7 @@ except ImportError:
 import django.core.exceptions
 
 from .. import graphql_types
-from .. import convert
+from .. import conversion
 from .. import exceptions
 from ..operations import Operation
 from ._manager import ModelManager
@@ -79,10 +79,11 @@ class DjangoModelManager(ModelManager):
                 foreign_field = self.fields_info.foreign[field_name]
                 foreign_model_config = self.model_config.schema.get_model_config(
                     orm_model = foreign_field.orm_model)
-                foreign_model_config.orm_model_manager.create_one(
+                foreign_instance = foreign_model_config.orm_model_manager.create_one(
                     authenticated_user = authenticated_user,
                     graphql_path = graphql_path + [field_name],
                     **data.pop(field_name))
+                data[field_name] = foreign_instance
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
         # extract data for custom fields
@@ -97,11 +98,12 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             data = custom_fields_data)
         # enforce permissions & save
-        self.model_config.enforce_permissions(
+        self.model_config.ensure_permission(
             operation = Operation.CREATE,
             instance = instance,
             authenticated_user = authenticated_user,
             graphql_path = graphql_path,
+            data = data,
         )
         instance.save()
         # related data
@@ -129,7 +131,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
 
     def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -143,7 +145,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
 
     def read_many(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -153,14 +155,14 @@ class DjangoModelManager(ModelManager):
                 instance = instance,
                 graphql_selection = graphql_selection,
                 graphql_path = graphql_path,
-                enforce_permissions = False,
+                ensure_permission = False,
             )
             for instance in self._read(
                 graphql_selection = graphql_selection,
                 authenticated_user = authenticated_user,
                 **filters
             ).all()
-            if self.model_config.check_permissions(
+            if self.model_config.has_permission(
                 operation = Operation.READ,
                 instance = instance,
                 authenticated_user = authenticated_user,
@@ -208,23 +210,24 @@ class DjangoModelManager(ModelManager):
                 related_data[field_name] = data.pop(field_name)
         # extract data for custom fields
         custom_fields_data = self._extract_custom_fields_data(
-            operation = Operation.CREATE,
+            operation = Operation.UPDATE,
             data = data)
-        # direct attributes
-        for key, value in data.items():
-            setattr(instance, key, value)
         # custom fields definition
         self._create_or_update_custom_fields(
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
         # enforce permissions & save
-        self.model_config.enforce_permissions(
+        self.model_config.ensure_permission(
             operation = Operation.UPDATE,
             instance = instance,
             authenticated_user = authenticated_user,
             graphql_path = graphql_path,
+            data = data,
         )
+        # direct attributes
+        for key, value in data.items():
+            setattr(instance, key, value)
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
@@ -269,7 +272,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
 
     def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -278,7 +281,7 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             **filters
         )
-        self.model_config.enforce_permissions(
+        self.model_config.ensure_permission(
             operation = Operation.DELETE,
             instance = instance,
             authenticated_user = authenticated_user,
@@ -289,7 +292,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
         instance.delete()
         return result
@@ -315,7 +318,7 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user
         ).filter(**filters)
         # filter queryset, depending on model config
-        queryset = self.model_config.filter(
+        queryset = self.model_config.filter_by_user(
             queryset = queryset,
             authenticated_user = authenticated_user)
         # return resulting queryset
@@ -332,11 +335,11 @@ class DjangoModelManager(ModelManager):
             raise exceptions.NotFoundError(filters) from error
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
-            enforce_permissions=True):
+            ensure_permission=True):
             # pylint: disable=R0913 # Too many arguments
         # enforce permissions when requested
-        if enforce_permissions:
-            self.model_config.enforce_permissions(
+        if ensure_permission:
+            self.model_config.ensure_permission(
                 operation = Operation.READ,
                 instance = instance,
                 authenticated_user = authenticated_user,
@@ -363,19 +366,20 @@ class DjangoModelManager(ModelManager):
                         instance = child_instance,
                         graphql_selection = graphql_subselection,
                         graphql_path = graphql_path + [field_name, child_index],
-                        enforce_permissions = False,
+                        ensure_permission = False,
                     )
                     for child_index, child_instance
                     in enumerate(field_value.all())
                 ]
             # foreign field
             elif field_value is not None:
-                result[field_name] = self._instance_to_dict(
+                model_manager = self.model_config.schema.get_model_config(orm_model=field_value.__class__).orm_model_manager
+                result[field_name] = model_manager._instance_to_dict(
                     authenticated_user = authenticated_user,
                     instance = field_value,
                     graphql_selection = graphql_subselection,
                     graphql_path = graphql_path + [field_name],
-                    enforce_permissions = True,
+                    ensure_permission = True,
                 )
         return result
 
@@ -389,10 +393,9 @@ class DjangoModelManager(ModelManager):
                 authenticated_user = authenticated_user,
             )
         )
-        if hasattr(self.orm_model, 'filter_permitted'):
-            base_queryset = self.orm_model.filter_permitted(authenticated_user)
-        else:
-            base_queryset = self.orm_model.objects
+        base_queryset = self.orm_model.objects
+        if hasattr(self.orm_model, 'filter_for_user'):
+            base_queryset = self.orm_model.filter_for_user(authenticated_user, base_queryset)
         return (base_queryset
             .only(*only)
             .prefetch_related(*prefetch_related)
@@ -514,7 +517,7 @@ class DjangoModelManager(ModelManager):
         """
         # enum
         if getattr(field, 'choices', None):
-            graphql_type = convert.to_graphql_enum_from_choices(
+            graphql_type = conversion.to_graphql_enum_from_choices(
                 prefix = f'{self.model_config.name}__{field.name}',
                 choices = field.choices,
                 schema = self.model_config.schema,
@@ -530,7 +533,7 @@ class DjangoModelManager(ModelManager):
                     self._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:
-            raise ValueError(f'Could not convert {field} to graphql type')
+            raise ValueError(f'Could not conversion {field} to graphql type')
         # result
         return graphql_type
 

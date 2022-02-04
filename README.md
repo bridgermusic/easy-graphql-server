@@ -44,7 +44,7 @@ schema = egs.Schema()
 schema.expose_query(
     name = 'foo',
     input_format = {
-        'input_string': egs.Mandatory(str),
+        'input_string': egs.Required(str),
         'input_integer': int,
     },
     output_format = {
@@ -70,7 +70,7 @@ def bar_mutation_method(value=None, increment_value=None):
 schema.expose_mutation(
     name = 'bar',
     input_format = {
-        'input_string': egs.Mandatory(str),
+        'input_string': egs.Required(str),
         'input_integer': int,
     },
     output_format = {
@@ -91,7 +91,7 @@ schema = egs.Schema()
 class FooQuery(schema.ExposedQuery):
     name = 'foo'
     input_format = {
-        'input_string': egs.Mandatory(str),
+        'input_string': egs.Required(str),
         'input_integer': int,
     }
     output_format = {
@@ -136,7 +136,7 @@ import easy_graphql_server as egs
 class FooQuery(schema.ExposedQuery):
     name = 'foo'
     input_format = {
-        'input_string': egs.Mandatory(str),
+        'input_string': egs.Required(str),
         'input_integer': int,
     }
     output_format = {
@@ -195,7 +195,7 @@ Options for *queries* and *mutations* are the same.
 
  * `pass_authenticated_user` can either be a `bool` or a `str`; if set to `True`, the `authenticated_user` parameter will be passed to the callback method, indicating the user authenticated in the source HTTP request (or `None` if the request was unauthenticated); if set to a `str`, the given string will be the name of the keyword parameter passed to the callback method instead of `authenticated_user`
 
- * `force_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
+ * `require_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
 
 ### Expose ORM models
 
@@ -288,11 +288,11 @@ The same options can be passed either as class attributes for subclasses of `Exp
 
 * `only_when_child_of` is either `None` (model does not have to be nested to be exposed), `True` (the model is not exposed if not nested), an ORM model class, or a tuple/list/set of ORM model classes (the defined model can only be exposed when nested directly under one of models passed as `only_when_child_of` parameter)
 
-* `force_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
+* `require_authenticated_user` is a `bool` indicating whether or not authentication is required for the exposed method
 
-* `ensure_permissions` is either `None`, or a callback method returning a `bool` (`True` if operation is authorized, `False` otherwise), and taking as parameters `authenticated_user` (self-explanatory), `operation` (a value of the `easy_graphql_server.Operation` enum: `CREATE`, `READ`, `UPDATE` or `DELETE`) and `data` (new data, only applies to `CREATE` and `UPDATE`)
+* `has_permission` is either `None`, or a callback method returning a `bool` (`True` if operation is authorized, `False` otherwise), and taking as parameters `authenticated_user` (self-explanatory), `operation` (a value of the `easy_graphql_server.Operation` enum: `CREATE`, `READ`, `UPDATE` or `DELETE`) and `data` (new data, only applies to `CREATE` and `UPDATE`)
 
-* `filter_by_authenticated_user` is either `None`, or a callback method returning a `queryset`, and taking as parameters `queryset` and `authenticated_user`
+* `filter_by_user` is either `None`, or a callback method returning a `queryset`, and taking as parameters `queryset` and `authenticated_user`
 
 ### Perform GraphQL queries
 

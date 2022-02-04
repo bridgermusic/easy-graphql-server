@@ -36,11 +36,13 @@ def generate_testcase(schema, graphql_path,
             # load JSON output
             json_path = self._replace_extension(graphql_path, 'json')
             with open(json_path, 'rt', encoding='utf-8') as json_file:
+                json_data = json_file.read()
+                json_data = re.sub(r'(^|\n)//[^\n]+', r'\1', json_data)
                 try:
                     json_list = [
                         json.loads(expected_output)
                         for i, expected_output
-                        in enumerate(re.split(r'\n\s*;\s*\n', json_file.read()))
+                        in enumerate(re.split(r'\n\s*;\s*\n', json_data))
                     ]
                 except json.decoder.JSONDecodeError as error:
                     raise ValueError(f'Cannot decode JSON in `{json_path}`: '
@@ -62,7 +64,7 @@ def generate_testcase(schema, graphql_path,
                     user = None
                 elif not hasattr(self, 'get_or_create_user'):
                     raise AttributeError(
-                        'To use the `USER` directive, you must implement a `get_or_create_user() '
+                        'To use the `USER` directive, you must implement a `get_or_create_user(username) '
                         'method` on a base class for test cases, and pass this class as a '
                         '`base_test_class` parameter.')
                 else:

@@ -93,7 +93,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
             to_graphql_type(type_[0], prefix, for_input=for_input, schema=schema)
         )
     # mandatory
-    if isinstance(type_, types.Mandatory):
+    if isinstance(type_, types.Required):
         return graphql_types.NonNull(
             to_graphql_type(type_.type_, prefix, for_input=for_input, schema=schema)
         )
@@ -140,6 +140,10 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
             for_input = for_input,
             schema = schema)
     # oops.
+    if isinstance(type_, types.Model):
+        raise ValueError('Could not convert `easy_graphql_server.Model` instance '
+            'to graphql type, use instead `Model(...).output_format`, '
+            '`Model(...).create_input_format` or `Model(...).update_input_format`')
     raise ValueError(f'Could not convert {type_} to graphql type')
 
 

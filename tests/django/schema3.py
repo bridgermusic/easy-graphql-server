@@ -25,7 +25,7 @@ class ExposedPerson(easy_graphql_server.ExposedModel):
 
 class ExposedMe(easy_graphql_server.ExposedQuery):
     name = 'me'
-    force_authenticated_user = True
+    require_authenticated_user = True
     pass_authenticated_user = True
     output_format = easy_graphql_server.Model('person').output_format + {
         'is_superuser': bool, 'is_staff': bool} - ('houses', 'home', 'daily_occupations')
@@ -62,10 +62,10 @@ class ExposedDailyOccupation(easy_graphql_server.ExposedModel):
 
 class ExposedBankAccount(easy_graphql_server.ExposedModel):
     orm_model = BankAccount
-    force_authenticated_user = True
+    require_authenticated_user = True
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True)
 schema.expose(ExposedPerson)
 schema.expose(ExposedMe)
 schema.expose(ExposedHouse)
