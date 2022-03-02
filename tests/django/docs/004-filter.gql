@@ -1,3 +1,4 @@
+# USER: admin@example.com
 query {
   people (first_name__startswith: "A", birth_date__year__gt: 1985) {
     first_name
@@ -7,6 +8,7 @@ query {
 
 ;
 
+# USER: admin@example.com
 query {
   houses (
     construction_date__year__lt: 2000

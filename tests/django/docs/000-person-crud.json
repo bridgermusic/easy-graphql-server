@@ -86,7 +86,7 @@
       "message": "{\"error\": \"UNEXPECTED_ARGUMENT\", \"payload\": {\"unexpected_argument_name\": \"id\", \"parent_type_name\": \"update_person_____input_type\", \"path\": [\"mutation\", \"update_person\", \"_\", \"id\"]}}",
       "locations": [
         {
-          "line": 2,
+          "line": 3,
           "column": 29
         }
       ],

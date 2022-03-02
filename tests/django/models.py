@@ -59,7 +59,7 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
     def has_permission(self, authenticated_user, operation, data):
         # unauthenticated requests can only create or read people
         if authenticated_user is None:
-            return operation in (Operation.CREATE, Operation.READ)
+            return operation == Operation.CREATE and not self.is_staff and not self.is_superuser
         # superusers can do anything
         if authenticated_user.is_superuser:
             return True

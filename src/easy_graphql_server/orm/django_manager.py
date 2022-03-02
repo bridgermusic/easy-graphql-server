@@ -131,7 +131,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            ensure_permission = True,
+            ensure_permission = False,
         )
 
     def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -379,7 +379,7 @@ class DjangoModelManager(ModelManager):
                     instance = field_value,
                     graphql_selection = graphql_subselection,
                     graphql_path = graphql_path + [field_name],
-                    ensure_permission = True,
+                    ensure_permission = ensure_permission,
                 )
         return result
 

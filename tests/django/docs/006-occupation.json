@@ -22,7 +22,11 @@
 
 {
   "data": {
-    "people": []
+    "people": [
+      {
+        "username": "admin@example.com"
+      }
+    ]
   }
 }
 
@@ -31,7 +35,7 @@
 {
     "data": {
         "create_person": {
-            "id": 1
+            "id": 2
         }
     }
 }
@@ -40,33 +44,48 @@
 
 {
     "data": {
-        "people": [
-            {
-                "daily_occupations": [
-                    {
-                        "id": 1,
-                        "occupation": "SLEEP",
-                        "hours_per_day": 7
-                    },
-                    {
-                        "id": 2,
-                        "occupation": "WORK",
-                        "hours_per_day": 9
-                    },
-                    {
-                        "id": 3,
-                        "occupation": "EAT",
-                        "hours_per_day": 3
-                    },
-                    {
-                        "id": 4,
-                        "occupation": "_",
-                        "hours_per_day": 5
-                    }
-                ]
-            }
-        ]
+        "people": []
     }
+}
+
+;
+
+{
+  "data": {
+    "people": [
+      {
+        "id": 1,
+        "username": "admin@example.com",
+        "daily_occupations": []
+      },
+      {
+        "id": 2,
+        "username": "john.doe@example.com",
+        "daily_occupations": [
+          {
+            "id": 1,
+            "occupation": "SLEEP",
+            "hours_per_day": 7
+          },
+          {
+            "id": 2,
+            "occupation": "WORK",
+            "hours_per_day": 9
+          },
+          {
+            "id": 3,
+            "occupation": "EAT",
+            "hours_per_day": 3
+          },
+          {
+            "id": 4,
+            "occupation": "_",
+            "hours_per_day": 5
+          }
+        ]
+      }
+    ]
+  }
 }
 
 ;
@@ -138,7 +157,7 @@
 {
     "data": {
         "update_person": {
-            "id": 1
+            "id": 2
         }
     }
 }
@@ -146,30 +165,52 @@
 ;
 
 {
-    "data": {
-        "person": {
-            "daily_occupations": [
-                {
-                    "id": 1,
-                    "occupation": "SLEEP",
-                    "hours_per_day": 8
-                },
-                {
-                    "id": 2,
-                    "occupation": "WORK",
-                    "hours_per_day": 8
-                },
-                {
-                    "id": 4,
-                    "occupation": "_",
-                    "hours_per_day": 5
-                },
-                {
-                    "id": 5,
-                    "occupation": "COMMUTE",
-                    "hours_per_day": 3
-                }
-            ]
+  "data": {
+    "person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"FORBIDDEN\", \"payload\": {\"operation\": \"READ\", \"authenticated_user\": \"john.doe@example.com\", \"path\": [\"query\", \"person\"]}}",
+      "locations": [
+        {
+          "line": 5,
+          "column": 3
         }
+      ],
+      "path": [
+        "person"
+      ]
     }
+  ]
+}
+
+;
+
+{
+  "data": {
+    "person": {
+      "daily_occupations": [
+        {
+          "id": 1,
+          "occupation": "SLEEP",
+          "hours_per_day": 8
+        },
+        {
+          "id": 2,
+          "occupation": "WORK",
+          "hours_per_day": 8
+        },
+        {
+          "id": 4,
+          "occupation": "_",
+          "hours_per_day": 5
+        },
+        {
+          "id": 5,
+          "occupation": "COMMUTE",
+          "hours_per_day": 3
+        }
+      ]
+    }
+  }
 }
