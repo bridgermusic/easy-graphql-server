@@ -2,12 +2,12 @@
     This module defines `Required` class and `JSONString` type.
 """
 
-from .graphql_types import JSONString # pylint: disable=W0611 # Unused import
+from .graphql_types import JSONString # pylint: disable=unused-import
 from .operations import Operation
 
 
 class Required:
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
     """
         Non-GraphQL wrapper type, to replace NonNull in mappings or when using
         "natural" Python types
@@ -20,7 +20,7 @@ class ModelField:
     """
         Non-GraphQL wrapper type, to use the same type as a field of an already exposed model.
     """
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, model_name, field_path=None):
         self.model_name = model_name
@@ -38,7 +38,7 @@ class ModelInterface:
     """
         Non-GraphQL wrapper type, to describe the interface of an already exposed model.
     """
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
 
     def __init__(self, model_name, operation, exclude=None, additional=None):
         self.model_name = model_name

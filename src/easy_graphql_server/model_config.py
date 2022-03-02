@@ -20,7 +20,6 @@ class ModelConfig:
         to store configuration for exposed models.
     """
 
-    # pylint: disable=R0913 # Too many arguments
     def __init__(self, schema, orm_model, name=None, plural_name=None,
             can_expose=True, cannot_expose=False,
             can_create=True, can_read=True, can_update=True, can_write=True, can_delete=True,
@@ -322,7 +321,7 @@ class ModelConfig:
             queryset = filter_by_user_method(queryset, authenticated_user)
         return queryset
 
-    def has_permission(self, instance, authenticated_user, operation, data={}):
+    def has_permission(self, instance, authenticated_user, operation, data=None):
         """
             Return a boolean indicating whether or not the requested operation can
             be performed on the instance.
@@ -331,13 +330,15 @@ class ModelConfig:
             `Operation.UPDATE`. It is a dictionary containing the new provided data
             for the instance.
         """
+        if data is None:
+            data = {}
         for has_permission_method in self.has_permission_methods:
             if not has_permission_method(instance, authenticated_user, operation, data):
                 return False
         return True
 
     def ensure_permission(self, instance, authenticated_user, operation,
-            data={}, graphql_path=None):
+            data=None, graphql_path=None):
         """
             Raise an `exceptions.ForbiddenError` when `has_permission()` returns
             `False` with the same parameters, aka when the requested operation cannot
@@ -349,6 +350,8 @@ class ModelConfig:
 
             The `graphql_path` parameter indicates where the permission was denied.
         """
+        if data is None:
+            data = {}
         if not self.has_permission(instance, authenticated_user, operation, data):
             raise exceptions.ForbiddenError(
                 operation = operation,

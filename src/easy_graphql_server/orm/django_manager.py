@@ -29,16 +29,15 @@ class DjangoModelManager(ModelManager):
     # metadata extraction
 
     def get_fields_info(self):
-        # pylint: disable=W0212 # Access to a protected member _meta of a client class
         """
             Retrieve fields info for a given Django model.
         """
         # initialize result
         fields_info = FieldsInfo()
         # primary key
-        fields_info.primary = self.orm_model._meta.pk.name
+        fields_info.primary = self.orm_model._meta.pk.name # pylint: disable=protected-access
         # value & foreign fields_info
-        for field in self.orm_model._meta.fields:
+        for field in self.orm_model._meta.fields: # pylint: disable=protected-access
             # is it mandatory?
             if not field.blank:
                 fields_info.mandatory |= {field.name, field.attname}
@@ -61,7 +60,7 @@ class DjangoModelManager(ModelManager):
             if field.unique:
                 fields_info.unique[field.attname] = fields_info.value[field.attname]
         # related fields_info
-        for related in self.orm_model._meta.related_objects:
+        for related in self.orm_model._meta.related_objects: # pylint: disable=protected-access
             fields_info.related[related.name] = RelatedField(
                 orm_model = related.related_model,
                 field_name = related.field.name,
@@ -336,7 +335,6 @@ class DjangoModelManager(ModelManager):
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
             ensure_permission=True):
-            # pylint: disable=R0913 # Too many arguments
         # enforce permissions when requested
         if ensure_permission:
             self.model_config.ensure_permission(
@@ -373,7 +371,9 @@ class DjangoModelManager(ModelManager):
                 ]
             # foreign field
             elif field_value is not None:
-                model_manager = self.model_config.schema.get_model_config(orm_model=field_value.__class__).orm_model_manager
+                model_manager = self.model_config.schema.get_model_config(
+                    orm_model=field_value.__class__).orm_model_manager
+                # pylint: disable=protected-access
                 result[field_name] = model_manager._instance_to_dict(
                     authenticated_user = authenticated_user,
                     instance = field_value,
@@ -403,7 +403,7 @@ class DjangoModelManager(ModelManager):
         )
 
     def build_queryset_parts(self, graphql_selection, authenticated_user,
-            field_prefix=''): # pylint: disable=R0914 # Too many local variables
+            field_prefix=''):
         """
             Build queryset parts for given GraphQL selection
 
@@ -430,7 +430,6 @@ class DjangoModelManager(ModelManager):
                 select_related.append(field_prefix + field_name)
                 foreign_orm_model_manager = schema.get_model_config(
                     orm_model = foreign_field.orm_model).orm_model_manager
-                # pylint: disable=W0612 # Unused variable '_'
                 foreign_only, foreign_prefetch_related, foreign_select_related = (
                     foreign_orm_model_manager.build_queryset_parts(
                         graphql_selection = graphql_subselection,

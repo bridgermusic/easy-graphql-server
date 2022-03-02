@@ -9,7 +9,7 @@ from typing import Any
 
 import graphql.type
 # Had to disable pylint below, because "No name '...' in module '...'"
-from graphql.language.ast import ValueNode, StringValueNode # pylint: disable=E0611
+from graphql.language.ast import ValueNode, StringValueNode # pylint: disable=no-name-in-module
 from graphql.language.printer import print_ast
 
 # native scalar types

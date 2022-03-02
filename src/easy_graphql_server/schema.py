@@ -7,9 +7,8 @@ import inspect
 from collections import defaultdict
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
-# Had to disable pylint below, because "No name '...' in module '...'" and "Unable to import '...'"
-from graphql.type.validate import validate_schema # pylint: disable=E0611,E0401
-from graphql.utilities import get_introspection_query # pylint: disable=E0611,E0401
+from graphql.type.validate import validate_schema # pylint: disable=no-name-in-module,import-error
+from graphql.utilities import get_introspection_query # pylint: disable=no-name-in-module,import-error
 from graphql.graphql import graphql_sync
 
 from . import exceptions, exposition, introspection
@@ -49,25 +48,21 @@ class Schema:
         self.debug = debug
         # abstract parent classes
         class Exposed(exposition.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.Exposed = Exposed # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.Exposed = Exposed # pylint: disable=invalid-name
         class ExposedModel(exposition.ExposedModel, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedModel = ExposedModel # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedModel = ExposedModel # pylint: disable=invalid-name
         class ExposedQuery(exposition.ExposedQuery, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedQuery = ExposedQuery # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedQuery = ExposedQuery # pylint: disable=invalid-name
         class ExposedMutation(exposition.ExposedMutation, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedMutation = ExposedMutation # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedMutation = ExposedMutation # pylint: disable=invalid-name
         self.orm_model_manager_classes = []
 
     def get_documentation(self, with_descriptions=False):
@@ -123,7 +118,7 @@ class Schema:
         if orm_model_manager_class not in self.orm_model_manager_classes:
             self.orm_model_manager_classes.append(orm_model_manager_class)
 
-    def execute(self, query, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
+    def execute(self, query, variables=None, operation_name=None,
             authenticated_user=None,
             serializable_output=False):
         """
@@ -185,7 +180,7 @@ class Schema:
             ]
             ```
         """
-        # pylint: disable=C0415 # Import outside toplevel
+        # pylint: disable=import-outside-toplevel
         from .webserver.django_schema_view import DjangoSchemaView
         return DjangoSchemaView(schema=self, with_graphiql=with_graphiql).view
 
@@ -209,17 +204,15 @@ class Schema:
                 view_func = schema.as_flask_view())
             ```
         """
-        # pylint: disable=C0415 # Import outside toplevel
+        # pylint: disable=import-outside-toplevel
         from .webserver.flask_schema_view import FlaskSchemaView
         return FlaskSchemaView(schema=self).view
 
     # private attributes & methods
 
-    # pylint: disable=R0913 # Too many arguments
     def _expose_method(self, type_, name, method, input_format=None, output_format=None,
             pass_graphql_selection=False, pass_graphql_path=False,
             pass_authenticated_user=False, require_authenticated_user=False):
-        # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
         self.methods[type_][name] = GraphQLField(
         # output format
         type_ = to_graphql_type(
@@ -318,10 +311,10 @@ class Schema:
 
     # build wrapper around passed methods to build a callback
 
-    def _make_callback(self, type_, method, # pylint: disable=R0913 # Too many arguments
+    def _make_callback(self, type_, method,
             pass_graphql_selection, pass_graphql_path,
             pass_authenticated_user, require_authenticated_user):
-        def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
+        def callback(source, info, **kwargs): # pylint: disable=unused-argument
             try:
                 # ensure authenticated user when mandatory
                 if require_authenticated_user or pass_authenticated_user:

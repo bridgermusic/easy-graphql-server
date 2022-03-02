@@ -9,8 +9,7 @@ import enum
 import datetime
 import decimal
 
-# Had to disable pylint below, because "No name '...' in module '...'"
-from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=E0611
+from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=
 from graphql import \
     GraphQLEnumType, GraphQLEnumValue, \
     GraphQLField, GraphQLArgument, \
@@ -51,7 +50,7 @@ def to_graphql_enum_key(name, capitalize=True):
     return key
 
 def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=True, schema=None):
-    # pylint: disable=W0613 # Unused argument 'schema'
+    # pylint: disable=unused-argument
     """
         Create a `GraphQLEnumType` from a list of choices.
 

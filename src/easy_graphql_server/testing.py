@@ -83,15 +83,15 @@ def generate_testcase(schema, graphql_path,
             print(40 * '+' + ' RECEIVED ' + 40 * '+')
             print(reality)
             print(90 * '~')
-        def run_test(self, *args, **kwargs): # pylint: disable=W0613 # Unused arguments 'args', 'kwargs'
+        def run_test(self, *args, **kwargs): # pylint: disable=unused-argument
             """
                 Run data-driven test
             """
             # show the difference, no matter how long
-            self.maxDiff = None # pylint: disable=C0103 # Attribute name "maxDiff" doesn't conform to snake_case
+            self.maxDiff = None # pylint: disable=invalid-name
             # so we can debug SQL queries
             if django_environment:
-                from django.conf import settings # pylint: disable=C0415 # Import outside toplevel
+                from django.conf import settings # pylint: disable=import-outside-toplevel
                 settings.DEBUG = True
             # execute setup script if present
             setup_script_path = self._replace_extension(graphql_path, 'setup.py')
@@ -189,7 +189,7 @@ def make_tests_loader(schemata, path, base_test_class=DefaultBaseTestCase):
     """
     if not isinstance(schemata, (tuple, list, set)):
         schemata = [schemata]
-    def load_tests(loader, tests, ignore): # pylint: disable=W0613 # Unused argument 'loader', 'ignore'
+    def load_tests(loader, tests, ignore): # pylint: disable=unused-argument
         path_ = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', path)
         for schema in schemata:
             for test in generate_testcases(schema, path_, base_test_class):

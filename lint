@@ -5,5 +5,7 @@ PYTHONPATH=src pylint \
   --fail-on=C0115 \
   --confidence=HIGH,INFERENCE,INFERENCE_FAILURE,UNDEFINED \
   --include-naming-hint y \
+  --max-line-length=120 \
+  --disable=too-many-arguments \
   easy_graphql_server \
   "$@"

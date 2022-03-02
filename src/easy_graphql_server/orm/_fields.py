@@ -4,7 +4,7 @@
 
 
 class LinkedField:
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
     """
         Base class for `ForeignField` and `RelatedField`.
     """
@@ -19,7 +19,7 @@ class LinkedField:
             f'field_name={self.field_name} value_field_name={self.value_field_name}>')
 
 
-class ForeignField(LinkedField): # pylint: disable=R0903 # Too few public methods
+class ForeignField(LinkedField): # pylint: disable=too-few-public-methods
     """
         Description of a foreign key field.
 
@@ -31,7 +31,7 @@ class ForeignField(LinkedField): # pylint: disable=R0903 # Too few public method
         primary key on the other model.
     """
 
-class RelatedField(LinkedField): # pylint: disable=R0903 # Too few public methods
+class RelatedField(LinkedField): # pylint: disable=too-few-public-methods
     """
         Description of a "related" field (aka., the opposite of a foreign key field).
 
@@ -44,7 +44,7 @@ class RelatedField(LinkedField): # pylint: disable=R0903 # Too few public method
     """
 
 
-class FieldsInfo: # pylint: disable=R0903 # Too few public methods
+class FieldsInfo: # pylint: disable=too-few-public-methods
     """
         Info about fields for a given ORM model.
     """

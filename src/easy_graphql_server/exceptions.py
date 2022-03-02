@@ -22,7 +22,8 @@ class BaseError(Exception):
 
 
 _graphqlerror__init__ = GraphQLError.__init__
-def graphqlerror__init__(self, message, nodes=None, source=None, positions=None, path=None, original_error=None, extensions=None):
+def graphqlerror__init__(self, message, nodes=None, source=None, positions=None, path=None,
+        original_error=None, extensions=None):
     """
         Patch for the constructor of GraphQLError class, defined in graphql-core.
 
@@ -32,15 +33,28 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
         error = None
         # parse original error message
         possible_errors = (
-            ('MISSING_ARGUMENT', r"^Field '(?P<parent_type_name>.*?)\.(?P<expected_field_name>.*?)' of required type '(?P<expected_type>.*?)' was not provided\."),
-            ('MISSING_ARGUMENT', r"^Field '(?P<parent_type_name>.*?)' argument '(?P<expected_argument_name>.*?)' of type '(?P<expected_type>.*?)' is required, but it was not provided\."),
-            ('UNEXPECTED_ARGUMENT', r"^Field '(?P<unexpected_argument_name>.*?)' is not defined by type '(?P<parent_type_name>.*?)'\."),
-            ('METHOD_NOT_FOUND', r"^Cannot query field '(?P<method_name>.*?)' on type '(?:Mutation|Query)'\.$"),
-            ('METHOD_NOT_FOUND', r"^Cannot query field '(?P<method_name>.*?)' on type '(?:Mutation|Query)'\. Did you mean (?P<suggestions>.*?)\?$"),
-            ('UNEXPECTED_QUERIED_FIELD', r"^Cannot query field '(?P<unexpected_field_name>.*?)' on type '(?P<parent_type_name>.*?)'\.$"),
-            ('UNEXPECTED_QUERIED_FIELD', r"^Cannot query field '(?P<unexpected_field_name>.*?)' on type '(?P<parent_type_name>.*?)'\. Did you mean (?P<suggestions>.*?)\?$"),
-            ('WRONGLY_TYPED_ARGUMENT', r"^Expected value of type '(?P<expected_field_type>.*?)', found (?P<provided_field_value>.*?)\."),
-            ('SYNTAX_ERROR', r"^Syntax error: (?P<message>.*?)$"),
+            ('MISSING_ARGUMENT',
+                r"^Field '(?P<parent_type_name>.*?)\.(?P<expected_field_name>.*?)' of required type "
+                r"'(?P<expected_type>.*?)' was not provided\."),
+            ('MISSING_ARGUMENT',
+                r"^Field '(?P<parent_type_name>.*?)' argument '(?P<expected_argument_name>.*?)' of type "
+                r"'(?P<expected_type>.*?)' is required, but it was not provided\."),
+            ('UNEXPECTED_ARGUMENT',
+                r"^Field '(?P<unexpected_argument_name>.*?)' is not defined by type '(?P<parent_type_name>.*?)'\."),
+            ('METHOD_NOT_FOUND',
+                r"^Cannot query field '(?P<method_name>.*?)' on type '(?:Mutation|Query)'\.$"),
+            ('METHOD_NOT_FOUND',
+                r"^Cannot query field '(?P<method_name>.*?)' on type '(?:Mutation|Query)'\. Did you mean "
+                r"(?P<suggestions>.*?)\?$"),
+            ('UNEXPECTED_QUERIED_FIELD',
+                r"^Cannot query field '(?P<unexpected_field_name>.*?)' on type '(?P<parent_type_name>.*?)'\.$"),
+            ('UNEXPECTED_QUERIED_FIELD',
+                r"^Cannot query field '(?P<unexpected_field_name>.*?)' on type '(?P<parent_type_name>.*?)'\. Did you "
+                r"mean (?P<suggestions>.*?)\?$"),
+            ('WRONGLY_TYPED_ARGUMENT',
+                r"^Expected value of type '(?P<expected_field_type>.*?)', found (?P<provided_field_value>.*?)\."),
+            ('SYNTAX_ERROR',
+                r"^Syntax error: (?P<message>.*?)$"),
         )
         for possible_error, regex in possible_errors:
             match = re.search(regex, message)
@@ -77,7 +91,8 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 'error': error,
                 'payload': payload,
             })
-    return _graphqlerror__init__(self, message, nodes, source, positions, path, original_error, extensions)
+    return _graphqlerror__init__(
+        self, message, nodes, source, positions, path, original_error, extensions)
 setattr(GraphQLError, '__init__', graphqlerror__init__)
 
 

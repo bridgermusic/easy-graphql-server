@@ -8,7 +8,7 @@ import pathlib
 
 
 class SchemaView:
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
 
     """
         Django schema view. Base class for `DjangoSchemaView`.
@@ -55,8 +55,7 @@ class SchemaView:
         )
         return html_priority > json_priority
 
-    # pylint: disable=R0913 # Too many arguments
-    # pylint: disable=R0911 # Too many return statements
+    # pylint: disable=too-many-return-statements
     def compute_response(self, method, headers, body, query, authenticated_user):
         """
             Compute response to be served by HTTP server.
