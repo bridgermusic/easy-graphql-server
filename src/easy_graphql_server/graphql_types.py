@@ -4,6 +4,7 @@
 """
 
 import datetime
+from dateutil.parser.isoparser import DEFAULT_ISOPARSER
 import json
 from typing import Any
 
@@ -35,7 +36,7 @@ def serialize_datetime(output_value: datetime.datetime) -> str:
 def parse_datetime_value(input_value: Any) -> datetime.datetime:
     """ Parses an externally provided value to use as an input. """
     try:
-        return datetime.datetime.fromisoformat(input_value)
+        return DEFAULT_ISOPARSER.isoparse(input_value)
     except Exception as error:
         raise ValueError(
             f'Cannot parse DateTime from: {repr(input_value)}, got: {error}') from error
@@ -66,7 +67,7 @@ def serialize_date(output_value: datetime.date) -> str:
 def parse_date_value(input_value: Any) -> datetime.date:
     """ Parses an externally provided value to use as an input. """
     try:
-        return datetime.date.fromisoformat(input_value)
+        return DEFAULT_ISOPARSER.parse_isodate(input_value)
     except Exception as error:
         raise ValueError(f'Cannot parse Date from: {repr(input_value)}, got: {error}') from error
 
@@ -96,7 +97,7 @@ def serialize_time(output_value: datetime.time) -> str:
 def parse_time_value(input_value: Any) -> datetime.time:
     """ Parses an externally provided value to use as an input. """
     try:
-        return datetime.time.fromisoformat(input_value)
+        return DEFAULT_ISOPARSER.parse_isotime(input_value)
     except Exception as error:
         raise ValueError(f'Cannot parse Time from: {repr(input_value)}, got: {error}') from error
 

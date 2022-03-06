@@ -27,6 +27,7 @@ class ModelConfig:
             cannot_delete=False,
             only_when_child_of=None, require_authenticated_user=False,
             has_permission=None, filter_by_user=None,
+            on_before_operation=None, on_after_operation=None,
             custom_fields=None):
         # store raw options
         self.schema = schema

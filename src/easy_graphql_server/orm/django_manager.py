@@ -96,7 +96,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
-        # enforce permissions & save
+        # enforce permissions
         self.model_config.ensure_permission(
             operation = Operation.CREATE,
             instance = instance,
@@ -104,6 +104,12 @@ class DjangoModelManager(ModelManager):
             graphql_path = graphql_path,
             data = data,
         )
+        # validation
+        try:
+            instance.full_clean()
+        except django.core.exceptions.ValidationError as exception:
+            self._reraise_validation_error(graphql_path, exception)
+        # save
         instance.save()
         # related data
         for field_name, children_data in related_data.items():
@@ -119,7 +125,8 @@ class DjangoModelManager(ModelManager):
                 getattr(instance, field_name).add(related_instance)
         # validation
         try:
-            instance.full_clean()
+            if callable(getattr(instance, 'clean_related', None)):
+                instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
             self._reraise_validation_error(graphql_path, exception)
         # result
@@ -228,6 +235,11 @@ class DjangoModelManager(ModelManager):
         for key, value in data.items():
             setattr(instance, key, value)
         instance.save()
+        # validation (raise an easy_graphql_server exception instead of a Django one)
+        try:
+            instance.clean()
+        except django.core.exceptions.ValidationError as exception:
+            self._reraise_validation_error(graphql_path, exception)
         # related data
         for field_name, children_data in related_data.items():
             related_field = self.fields_info.related[field_name]
@@ -261,6 +273,8 @@ class DjangoModelManager(ModelManager):
         # validation (raise an easy_graphql_server exception instead of a Django one)
         try:
             instance.full_clean()
+            if callable(getattr(instance, 'clean_related', None)):
+                instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
             self._reraise_validation_error(graphql_path, exception)
         # result

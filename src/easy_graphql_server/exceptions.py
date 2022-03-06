@@ -82,7 +82,10 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 if token.kind.value in '({':
                     ready = True
                 elif ready and token.kind.value == 'Name':
-                    path.append(token.value)
+                    if path:
+                        path.append(token.value)
+                    else:
+                        path = [token.value]
                     ready = False
             payload['path'] = path = path[::-1]
         # compute message for path

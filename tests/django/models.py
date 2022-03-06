@@ -40,7 +40,7 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
 
     objects = django.contrib.auth.models.UserManager()
 
-    def clean(self):
+    def clean_related(self):
         daily_occupations = list(self.daily_occupations.all())
         if daily_occupations:
             hours_sum = 0
