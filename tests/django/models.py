@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 from django.db import models
 from django.db.models import Q
@@ -9,6 +10,7 @@ from django.conf import settings
 from faker import Faker
 
 from easy_graphql_server import Operation
+from easy_graphql_server.custom_json import JSONEncoder
 
 
 GENDER_CHOICES = ('female', 'male', 'other')
@@ -35,10 +37,17 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
         null=True,
         on_delete=models.SET_NULL,
         related_name='tenants')
+    updates_count = models.IntegerField(blank=True, default=0)
+    creation_data = models.JSONField(blank=True, null=True, encoder=JSONEncoder)
 
     USERNAME_FIELD = 'username'
-
     objects = django.contrib.auth.models.UserManager()
+
+    def on_before_operation(self, authenticated_user, operation, data=None):
+        if operation == Operation.UPDATE:
+            self.updates_count += 1
+        elif operation == Operation.CREATE:
+            self.creation_data = data
 
     def clean_related(self):
         daily_occupations = list(self.daily_occupations.all())
@@ -84,7 +93,8 @@ class House(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='houses')
-    def filter_by_user(queryset, authenticated_user):
+    @staticmethod
+    def filter_for_user(queryset, authenticated_user):
         if not authenticated_user:
             return queryset.none()
         if authenticated_user.is_superuser:
@@ -127,13 +137,13 @@ class BankAccount(models.Model):
             return True
         return self.owner_id == authenticated_user.id
 
-    @classmethod
-    def filter_for_user(cls, authenticated_user, base_queryset):
+    @staticmethod
+    def filter_for_user(queryset, authenticated_user):
         if not authenticated_user:
-            return base_queryset.none()
+            return queryset.none()
         if authenticated_user.is_superuser:
-            return base_queryset
-        return base_queryset.filter(owner_id = authenticated_user.id)
+            return queryset
+        return queryset.filter(owner_id = authenticated_user.id)
 
 
 template_database = None

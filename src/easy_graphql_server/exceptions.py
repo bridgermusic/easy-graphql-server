@@ -3,10 +3,11 @@
 """
 
 import re
-import json
 
 from graphql import GraphQLError
 from graphql.language.ast import Node
+
+from . import custom_json
 
 
 class BaseError(Exception):
@@ -14,7 +15,7 @@ class BaseError(Exception):
         Base exception for `easy_graphql_server`
     """
     def __init__(self, error, payload):
-        message = json.dumps({
+        message = custom_json.dumps({
             'error': error,
             'payload': payload,
         })
@@ -90,7 +91,7 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
             payload['path'] = path = path[::-1]
         # compute message for path
         if error and payload:
-            message = json.dumps({
+            message = custom_json.dumps({
                 'error': error,
                 'payload': payload,
             })

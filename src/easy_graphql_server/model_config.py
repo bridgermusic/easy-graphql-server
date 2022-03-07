@@ -2,6 +2,8 @@
     This module defines the `ModelConfig` class.
 """
 
+from collections import defaultdict
+
 from .operations import Operation
 from .conversion import to_graphql_objecttype, to_graphql_argument
 from .types import Required
@@ -26,27 +28,33 @@ class ModelConfig:
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
             only_when_child_of=None, require_authenticated_user=False,
-            has_permission=None, filter_by_user=None,
+            has_permission=None, filter_for_user=None,
             on_before_operation=None, on_after_operation=None,
             custom_fields=None):
+        # pylint: disable=unused-argument # for callbacks
+
         # store raw options
         self.schema = schema
         self.require_authenticated_user = require_authenticated_user
         self.only_when_child_of = only_when_child_of
-        # permission methods
-        self.has_permission_methods = []
-        if has_permission:
-            self.has_permission_methods.append(has_permission)
-        if hasattr(orm_model, 'has_permission'):
-            self.has_permission_methods.append(
-                lambda instance, authenticated_user, operation, data:
-                    instance.has_permission(authenticated_user, operation, data)
-            )
-        self.filter_by_user_methods = []
-        if filter_by_user:
-            self.filter_by_user_methods.append(filter_by_user)
-        if hasattr(orm_model, 'filter_by_user'):
-            self.filter_by_user_methods.append(orm_model.filter_by_user)
+        # callbacks
+        callbacks_names = ('has_permission', 'filter_for_user', 'on_before_operation', 'on_after_operation')
+        self.callbacks = defaultdict(list)
+        for callback_name in callbacks_names:
+            local_callback = locals().get(callback_name)
+            if local_callback:
+                self.callbacks[callback_name].append(local_callback)
+            model_callback = orm_model.__dict__.get(callback_name)
+            if model_callback:
+                if isinstance(model_callback, (staticmethod, classmethod)):
+                    callback = getattr(orm_model, callback_name)
+                    self.callbacks[callback_name].append(callback)
+                else:
+                    def make_callback(callback_name):
+                        return (lambda instance, *args, **kwargs:
+                            getattr(instance, callback_name)(*args, **kwargs))
+                    self.callbacks[callback_name].append(
+                        make_callback(callback_name))
         # name
         self.name = name or schema.case_manager.convert(orm_model.__name__)
         self.plural_name = plural_name or f'{self.name}s'
@@ -279,6 +287,12 @@ class ModelConfig:
         # result
         return mapping
 
+    # callbacks
+
+    def _call(self, callback_name, *args, **kwargs):
+        for method in self.callbacks[callback_name]:
+            yield method(*args, **kwargs)
+
     # authorizations
 
     def can_perform(self, operation, field_name):
@@ -313,13 +327,13 @@ class ModelConfig:
             return True
         return issubclass(orm_model, self.only_when_child_of)
 
-    def filter_by_user(self, queryset, authenticated_user):
+    def filter_for_user(self, queryset, authenticated_user):
         """
             Returns a Django `Queryset`, which is a filtered version of the input `queryset`
             only showing what is available to the `authenticated_user`.
         """
-        for filter_by_user_method in self.filter_by_user_methods:
-            queryset = filter_by_user_method(queryset, authenticated_user)
+        for filter_for_user_method in self.callbacks['filter_for_user']:
+            queryset = filter_for_user_method(queryset, authenticated_user)
         return queryset
 
     def has_permission(self, instance, authenticated_user, operation, data=None):
@@ -333,10 +347,7 @@ class ModelConfig:
         """
         if data is None:
             data = {}
-        for has_permission_method in self.has_permission_methods:
-            if not has_permission_method(instance, authenticated_user, operation, data):
-                return False
-        return True
+        return all(self._call('has_permission', instance, authenticated_user, operation, data))
 
     def ensure_permission(self, instance, authenticated_user, operation,
             data=None, graphql_path=None):
@@ -359,6 +370,24 @@ class ModelConfig:
                 authenticated_user = authenticated_user,
                 path = graphql_path,
             )
+
+    # triggers
+
+    def on_before_operation(self, instance, authenticated_user, operation, data=None):
+        """
+            Execute pre-trigger(s) for given instance with given parameters.
+        """
+        if not isinstance(instance, self.orm_model_manager.orm_model):
+            raise Exception(f'Unexpected instance {instance}, should be of type {self.orm_model_manager.orm_model}')
+        return list(self._call('on_before_operation', instance, authenticated_user, operation, data))
+
+    def on_after_operation(self, instance, authenticated_user, operation, data=None):
+        """
+            Execute post-trigger(s) for given instance with given parameters.
+        """
+        if not isinstance(instance, self.orm_model_manager.orm_model):
+            raise Exception(f'Unexpected instance {instance}, should be of type {self.orm_model_manager.orm_model}')
+        return list(self._call('on_after_operation', instance, authenticated_user, operation, data))
 
     # custom field
 

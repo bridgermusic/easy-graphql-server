@@ -96,6 +96,8 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
+        # pre-save trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.CREATE, data)
         # enforce permissions
         self.model_config.ensure_permission(
             operation = Operation.CREATE,
@@ -129,6 +131,8 @@ class DjangoModelManager(ModelManager):
                 instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
             self._reraise_validation_error(graphql_path, exception)
+        # post-save trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.CREATE, data)
         # result
         if graphql_selection is None:
             return instance
@@ -185,6 +189,8 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             **filters
         )
+        # pre-update trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.UPDATE, data)
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -277,6 +283,8 @@ class DjangoModelManager(ModelManager):
                 instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
             self._reraise_validation_error(graphql_path, exception)
+        # post-update trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.UPDATE, data)
         # result
         if graphql_selection is None:
             return instance
@@ -307,7 +315,9 @@ class DjangoModelManager(ModelManager):
             graphql_path = graphql_path,
             ensure_permission = True,
         )
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.DELETE)
         instance.delete()
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.DELETE)
         return result
 
     # methods should be executed within an atomic database transaction
@@ -331,7 +341,7 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user
         ).filter(**filters)
         # filter queryset, depending on model config
-        queryset = self.model_config.filter_by_user(
+        queryset = self.model_config.filter_for_user(
             queryset = queryset,
             authenticated_user = authenticated_user)
         # return resulting queryset
@@ -349,6 +359,8 @@ class DjangoModelManager(ModelManager):
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
             ensure_permission=True):
+        # pre-read trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.READ)
         # enforce permissions when requested
         if ensure_permission:
             self.model_config.ensure_permission(
@@ -372,17 +384,23 @@ class DjangoModelManager(ModelManager):
                 result[field_name] = field_value
             # related field
             elif type(field_value).__name__ == 'RelatedManager':
-                result[field_name] = [
-                    self._instance_to_dict(
-                        authenticated_user = authenticated_user,
-                        instance = child_instance,
-                        graphql_selection = graphql_subselection,
-                        graphql_path = graphql_path + [field_name, child_index],
-                        ensure_permission = False,
-                    )
-                    for child_index, child_instance
-                    in enumerate(field_value.all())
-                ]
+                children_instances = field_value.all()
+                if len(children_instances) == 0:
+                    result[field_name] = []
+                else:
+                    model_manager = self.model_config.schema.get_model_config(
+                        orm_model=children_instances[0].__class__).orm_model_manager
+                    result[field_name] = [
+                        model_manager._instance_to_dict(
+                            authenticated_user = authenticated_user,
+                            instance = child_instance,
+                            graphql_selection = graphql_subselection,
+                            graphql_path = graphql_path + [field_name, child_index],
+                            ensure_permission = False,
+                        )
+                        for child_index, child_instance
+                        in enumerate(children_instances)
+                    ]
             # foreign field
             elif field_value is not None:
                 model_manager = self.model_config.schema.get_model_config(
@@ -395,6 +413,8 @@ class DjangoModelManager(ModelManager):
                     graphql_path = graphql_path + [field_name],
                     ensure_permission = ensure_permission,
                 )
+        # post-read trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ)
         return result
 
     def build_queryset(self, graphql_selection, authenticated_user):
@@ -407,9 +427,7 @@ class DjangoModelManager(ModelManager):
                 authenticated_user = authenticated_user,
             )
         )
-        base_queryset = self.orm_model.objects
-        if hasattr(self.orm_model, 'filter_for_user'):
-            base_queryset = self.orm_model.filter_for_user(authenticated_user, base_queryset)
+        base_queryset = self.model_config.filter_for_user(self.orm_model.objects, authenticated_user)
         return (base_queryset
             .only(*only)
             .prefetch_related(*prefetch_related)

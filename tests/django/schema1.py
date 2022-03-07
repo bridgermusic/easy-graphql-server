@@ -13,7 +13,8 @@ schema.expose_model(
     orm_model = Person,
     plural_name = 'people',
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations', 'gender'),
+        'houses', 'home', 'daily_occupations', 'gender', ),
+    can_read = ('updates_count', 'creation_data', ),
     custom_fields = [
         {
             'name': 'same_as_birth_date',
@@ -22,7 +23,7 @@ schema.expose_model(
             'update_one': create_or_update_person_birth_date,
             'create_one': create_or_update_person_birth_date,
         }
-    ]
+    ],
 )
 
 schema.expose_query(

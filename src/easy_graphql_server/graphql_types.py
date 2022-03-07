@@ -4,9 +4,9 @@
 """
 
 import datetime
-from dateutil.parser.isoparser import DEFAULT_ISOPARSER
 import json
 from typing import Any
+from dateutil.parser.isoparser import DEFAULT_ISOPARSER
 
 import graphql.type
 # Had to disable pylint below, because "No name '...' in module '...'"

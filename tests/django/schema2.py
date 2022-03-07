@@ -22,7 +22,8 @@ class ExposedPerson(schema.ExposedModel):
     orm_model = Person
     plural_name = 'people'
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations', 'gender')
+        'houses', 'home', 'daily_occupations', 'gender', )
+    can_read = ('updates_count', 'creation_data', )
     custom_fields = [ExposedPersonSameAsBirthdate]
 
 class ExposedMe(schema.ExposedQuery):
