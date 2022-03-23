@@ -375,4 +375,5 @@ class Schema:
                 cls._get_graphql_selection(selection.selection_set)
                 if selection.selection_set else None)
             for selection in selection_set.selections
+            if selection.name.value != '__typename'
         }

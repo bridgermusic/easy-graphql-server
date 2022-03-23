@@ -4,6 +4,7 @@
 """
 
 import datetime
+import decimal
 import json
 from typing import Any
 from dateutil.parser.isoparser import DEFAULT_ISOPARSER
@@ -18,7 +19,6 @@ from graphql.language.printer import print_ast
 Boolean = graphql.type.GraphQLBoolean
 Int = graphql.type.GraphQLInt
 Float = graphql.type.GraphQLFloat
-Decimal = Float
 String = graphql.type.GraphQLString
 
 # native scalar wrappers
@@ -26,6 +26,37 @@ String = graphql.type.GraphQLString
 Union = graphql.type.GraphQLUnionType
 List = graphql.type.GraphQLList
 NonNull = graphql.type.GraphQLNonNull
+
+# decimal type
+
+def serialize_decimal(output_value: decimal.Decimal) -> str:
+    """ Serializes an internal value to include in a response. """
+    return str(output_value)
+
+def parse_decimal_value(input_value: Any) -> decimal.Decimal:
+    """ Parses an externally provided value to use as an input. """
+    try:
+        return decimal.Decimal(input_value)
+    except Exception as error:
+        raise ValueError(
+            f'Cannot parse Decimal from: {repr(input_value)}, got: {error}') from error
+
+def parse_decimal_literal(value_node: ValueNode, _variables: Any = None) -> decimal.Decimal:
+    """ Parses an externally provided AST value to use as an input. """
+    if not isinstance(value_node, StringValueNode):
+        raise ValueError(
+            "Decimal should be represented as a string in input: " + print_ast(value_node),
+            value_node,
+        )
+    return parse_decimal_value(value_node.value)
+
+Decimal = graphql.type.GraphQLScalarType(
+    name = 'Decimal',
+    description = 'A decimal (fixed-point)',
+    serialize = serialize_decimal,
+    parse_value = parse_decimal_value,
+    parse_literal = parse_decimal_literal,
+)
 
 # datetime type
 

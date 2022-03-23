@@ -72,12 +72,15 @@ def generate_testcase(schema, graphql_path,
                 # yield expected data
                 yield i, (user, graphql, json_, sql.strip())
         @staticmethod
-        def show_diff(path, index, expectation, reality):
+        def show_diff(path, index, expectation, reality, input_=None):
             """
                 Show difference between expected and actual result.
             """
             print(90 * '~')
             print(f'{path} : {index}')
+            if input_:
+                print(40 * '~' + ' INPUT IS ' + 40 * '~')
+                print(input_)
             print(40 * '-' + ' EXPECTED ' + 40 * '-')
             print(expectation)
             print(40 * '+' + ' RECEIVED ' + 40 * '+')
@@ -122,7 +125,8 @@ def generate_testcase(schema, graphql_path,
                         path = self._replace_extension(graphql_path, 'json'),
                         index = index,
                         expectation = json.dumps(json_, indent=2),
-                        reality = json.dumps(json_result, indent=2)
+                        reality = json.dumps(json_result, indent=2),
+                        input_ = re.sub(r'(?:(?<=\n)|^)[ \t]*#(?![ \t]*USER)[^\n]*(?:\n|$)', '', graphql),
                     )
                     raise
                 # check SQL also (when provided)

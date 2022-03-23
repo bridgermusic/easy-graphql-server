@@ -14,8 +14,8 @@ class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
     def read_one(instance, authenticated_user, graphql_selection):
         return instance.birth_date
     @staticmethod
-    def create_one(instance, authenticated_user, data):
-        instance.birth_date = data
+    def create_one(instance, authenticated_user, value):
+        instance.birth_date = value
     update_one = create_one
 
 class ExposedPerson(schema.ExposedModel):

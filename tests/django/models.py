@@ -171,8 +171,8 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
         raise Exception('`populate_database()` should be called on an empty database')
 
     # initialize generator
-    Faker.seed(random_seed)
     fake = Faker()
+    fake.seed_instance(random_seed)
 
     # populate houses
     for i in range(houses_count):

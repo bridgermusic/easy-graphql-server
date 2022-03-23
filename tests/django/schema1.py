@@ -7,8 +7,8 @@ from django.db.models import Sum
 
 schema = easy_graphql_server.Schema(debug=True)
 
-def create_or_update_person_birth_date(instance, authenticated_user, data):
-    instance.birth_date = data
+def create_or_update_person_birth_date(instance, authenticated_user, value):
+    instance.birth_date = value
 schema.expose_model(
     orm_model = Person,
     plural_name = 'people',

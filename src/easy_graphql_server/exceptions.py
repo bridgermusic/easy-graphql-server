@@ -42,6 +42,8 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 r"'(?P<expected_type>.*?)' is required, but it was not provided\."),
             ('UNEXPECTED_ARGUMENT',
                 r"^Field '(?P<unexpected_argument_name>.*?)' is not defined by type '(?P<parent_type_name>.*?)'\."),
+            ('UNEXPECTED_ARGUMENT',
+                r"^Unknown argument '(?P<unexpected_argument_name>.*?)' on field '(?:Mutation|Query)\.(?P<method_name>.*?)'\."),
             ('METHOD_NOT_FOUND',
                 r"^Cannot query field '(?P<method_name>.*?)' on type '(?:Mutation|Query)'\.$"),
             ('METHOD_NOT_FOUND',
@@ -56,6 +58,8 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 r"^Expected value of type '(?P<expected_field_type>.*?)', found (?P<provided_field_value>.*?)\."),
             ('SYNTAX_ERROR',
                 r"^Syntax error: (?P<message>.*?)$"),
+            ('WRONG_ENUM_VALUE',
+                r"^Value '(?P<provided_field_value>.*?)' does not exist in '(?P<enum_type>.*?)' enum\.$"),
         )
         for possible_error, regex in possible_errors:
             match = re.search(regex, message)
