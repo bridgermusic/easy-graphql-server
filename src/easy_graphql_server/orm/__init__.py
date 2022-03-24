@@ -62,9 +62,9 @@ class ORM(enum.Enum):
         raise ValueError('This should not happen.')
 
     @classmethod
-    def get_manager(cls, orm_model, model_config):
+    def get_manager(cls, orm_model, model_config, restrict_queried_fields):
         """
             Returns manager object corresponding to a given model.
         """
         manager_class = cls.get_manager_class(orm_model)
-        return manager_class(orm_model, model_config)
+        return manager_class(orm_model, model_config, restrict_queried_fields)

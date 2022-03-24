@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
-schema = easy_graphql_server.Schema(debug=True)
+schema = easy_graphql_server.Schema(debug=True, restrict_models_queried_fields=True)
 
 def create_or_update_person_birth_date(instance, authenticated_user, value):
     instance.birth_date = value

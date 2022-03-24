@@ -37,7 +37,7 @@ class Schema:
 
     # public methods
 
-    def __init__(self, debug=False, casing=Casing.SNAKE):
+    def __init__(self, debug=False, casing=Casing.SNAKE, restrict_models_queried_fields=False):
         self.methods = defaultdict(dict)
         self.subclasses = []
         self.dirty = True
@@ -46,6 +46,7 @@ class Schema:
         # options
         self.case_manager = casing.value
         self.debug = debug
+        self.restrict_models_queried_fields = restrict_models_queried_fields
         # abstract parent classes
         class Exposed(exposition.Exposed):
             # pylint: disable=too-few-public-methods,missing-class-docstring
@@ -112,6 +113,8 @@ class Schema:
             See `ModelConfig` class constructor for more info about options.
         """
         self.dirty = True
+        if 'restrict_queried_fields' not in options:
+            options['restrict_queried_fields'] = self.restrict_models_queried_fields
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
         orm_model_manager_class = model_config.orm_model_manager.__class__

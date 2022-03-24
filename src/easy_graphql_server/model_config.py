@@ -27,7 +27,7 @@ class ModelConfig:
             can_create=True, can_read=True, can_update=True, can_write=True, can_delete=True,
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
             cannot_delete=False,
-            only_when_child_of=None, require_authenticated_user=False,
+            only_when_child_of=None, require_authenticated_user=False, restrict_queried_fields=False,
             has_permission=None, filter_for_user=None,
             on_before_operation=None, on_after_operation=None,
             custom_fields=None):
@@ -101,7 +101,9 @@ class ModelConfig:
         # instanciate ORM model manager
         self.orm_model_manager = ORM.get_manager(
             orm_model = orm_model,
-            model_config = self)
+            model_config = self,
+            restrict_queried_fields = restrict_queried_fields,
+        )
 
     def expose_methods(self):
         """

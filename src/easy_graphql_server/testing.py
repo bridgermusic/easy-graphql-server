@@ -38,15 +38,15 @@ def generate_testcase(schema, graphql_path,
             with open(json_path, 'rt', encoding='utf-8') as json_file:
                 json_data = json_file.read()
                 json_data = re.sub(r'(^|\n)//[^\n]+', r'\1', json_data)
-                try:
-                    json_list = [
-                        json.loads(expected_output)
-                        for i, expected_output
-                        in enumerate(re.split(r'\n\s*;\s*\n', json_data))
-                    ]
-                except json.decoder.JSONDecodeError as error:
-                    raise ValueError(f'Cannot decode JSON in `{json_path}`: '
-                        '{error}\n{expected_output}') from error
+                json_list = []
+                for i, expected_output in enumerate(re.split(r'\n\s*;\s*\n', json_data)):
+                    try:
+                        json_list.append(
+                            json.loads(expected_output)
+                        )
+                    except json.decoder.JSONDecodeError as error:
+                        raise ValueError(f'Cannot decode JSON in `{json_path}`[{i}]: '
+                            '{error}\n{expected_output}') from error
             # load generated SQL
             sql_path = self._replace_extension(graphql_path, 'sql')
             if os.path.isfile(sql_path):

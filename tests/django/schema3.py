@@ -66,7 +66,7 @@ class ExposedBankAccount(easy_graphql_server.ExposedModel):
     require_authenticated_user = True
 
 
-schema = easy_graphql_server.Schema(debug=True)
+schema = easy_graphql_server.Schema(debug=True, restrict_models_queried_fields=True)
 schema.expose(ExposedPerson)
 schema.expose(ExposedMe)
 schema.expose(ExposedHouse)

@@ -16,9 +16,10 @@ class ModelManager:
         Cannot be used as is, this is an abstract class that must be inherited.
     """
 
-    def __init__(self, orm_model, model_config):
+    def __init__(self, orm_model, model_config, restrict_queried_fields):
         self.orm_model = orm_model
         self.model_config = model_config
+        self.restrict_queried_fields = restrict_queried_fields
         self.fields_info = self.get_fields_info()
         self.fields_info.compute_linked()
         for custom_field in self.model_config.custom_fields:

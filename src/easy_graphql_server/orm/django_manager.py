@@ -242,14 +242,13 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             data = custom_fields_data)
         # direct attributes
-        if len(data) > 0:
-            for key, value in data.items():
-                setattr(instance, key, value)
-            # validation (raise an easy_graphql_server exception instead of a Django one)
-            try:
-                instance.clean()
-            except django.core.exceptions.ValidationError as exception:
-                reraise_django_validation_error(graphql_path, exception)
+        for key, value in data.items():
+            setattr(instance, key, value)
+        # validation (raise an easy_graphql_server exception instead of a Django one)
+        try:
+            instance.clean()
+        except django.core.exceptions.ValidationError as exception:
+            reraise_django_validation_error(graphql_path, exception)
         # save instance
         instance.save()
         # related data
@@ -447,8 +446,13 @@ class DjangoModelManager(ModelManager):
             )
         )
         base_queryset = self.model_config.filter_for_user(self.orm_model.objects, authenticated_user)
+        if self.restrict_queried_fields:
+            return (base_queryset
+                .only(*only)
+                .prefetch_related(*prefetch_related)
+                .select_related(*select_related)
+            )
         return (base_queryset
-            .only(*only)
             .prefetch_related(*prefetch_related)
             .select_related(*select_related)
         )
