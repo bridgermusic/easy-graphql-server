@@ -515,7 +515,7 @@ class DjangoModelManager(ModelManager):
         # enum
         if getattr(field, 'choices', None):
             graphql_type = convert.to_graphql_enum_from_choices(
-                prefix = f'{field.model.__name__}__{field.name}',
+                prefix = f'{self.model_config.name}__{field.name}',
                 choices = field.choices,
                 schema = self.model_config.schema,
             )

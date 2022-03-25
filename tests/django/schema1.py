@@ -13,7 +13,7 @@ schema.expose_model(
     orm_model = Person,
     plural_name = 'people',
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations'),
+        'houses', 'home', 'daily_occupations', 'gender'),
     custom_fields = [
         {
             'name': 'same_as_birth_date',

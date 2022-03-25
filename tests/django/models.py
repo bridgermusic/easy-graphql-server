@@ -11,11 +11,17 @@ from faker import Faker
 from easy_graphql_server import Operation
 
 
+GENDER_CHOICES = ('female', 'male', 'other')
+
 class Person(django.contrib.auth.models.AbstractBaseUser):
     class Meta:
         ordering = ('id',)
         db_table = 'auth_user'
     id = models.AutoField(primary_key=True)
+    gender = models.CharField(
+        choices=[(k,k) for k in GENDER_CHOICES],
+        max_length=max(len(k) for k in GENDER_CHOICES),
+        blank=True, default='other')
     username = models.CharField(max_length=255, unique=True)
     password = models.CharField(max_length=255, blank=True)
     first_name = models.CharField(max_length=32)

@@ -20,7 +20,7 @@ class ExposedPerson(easy_graphql_server.ExposedModel):
     orm_model = Person
     plural_name = 'people'
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations')
+        'houses', 'home', 'daily_occupations', 'gender')
     custom_fields = [ExposedPersonSameAsBirthdate]
 
 class ExposedMe(easy_graphql_server.ExposedQuery):

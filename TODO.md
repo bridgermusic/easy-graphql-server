@@ -2,7 +2,6 @@
 
 - limit/offset in model collection queries
 - order in model collection queries
-- check generated type names (from model exposition) in tests
 - `case_manager` in Schema
 - use description from Django fields
 - handle GraphQL subscriptions
@@ -11,6 +10,7 @@
 
 # DONE
 
+- check generated type names (from model exposition) in tests
 - allow custom fields for models (C, U)
 - possibility to pre-filter collection of model instances with `authenticated_user`
 - allow custom fields for models (R)
