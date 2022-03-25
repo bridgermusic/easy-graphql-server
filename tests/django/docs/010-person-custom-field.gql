@@ -1,0 +1,48 @@
+query {
+  people {
+    id
+  }
+}
+
+;
+
+mutation {
+  create_person (first_name: "Amel", last_name: "Bentrad", same_as_birth_date: "1991-09-01", username: "amel.bentrad@example.com") {
+    id
+    first_name
+    birth_date
+  }
+}
+
+;
+
+# USER: amel.bentrad@example.com
+mutation {
+  update_person (id: 1, _: {same_as_birth_date: "1991-01-09"}) {
+    id
+    first_name
+    birth_date
+  }
+}
+
+;
+
+# USER: amel.bentrad@example.com
+query {
+  person (id: 1) {
+    id
+    birth_date
+    same_as_birth_date
+  }
+}
+
+;
+
+# USER: amel.bentrad@example.com
+query {
+  people {
+    id
+    birth_date
+    same_as_birth_date
+  }
+}

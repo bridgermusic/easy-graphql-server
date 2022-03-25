@@ -7,11 +7,22 @@ from django.db.models import Sum
 
 schema = easy_graphql_server.Schema()
 
+def create_or_update_person_birth_date(instance, authenticated_user, data):
+    instance.birth_date = data
 schema.expose_model(
     orm_model = Person,
     plural_name = 'people',
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
         'houses', 'home', 'daily_occupations'),
+    custom_fields = [
+        {
+            'name': 'same_as_birth_date',
+            'format': easy_graphql_server.Model('person').fields.birth_date,
+            'read_one': lambda instance, authenticated_user, graphql_selection: instance.birth_date,
+            'update_one': create_or_update_person_birth_date,
+            'create_one': create_or_update_person_birth_date,
+        }
+    ]
 )
 
 schema.expose_query(

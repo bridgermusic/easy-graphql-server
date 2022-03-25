@@ -10,8 +10,7 @@ class ModelConfigCustomField:
     """
 
     def __init__(self, name, format, read_one=None, read_many=None,
-            update_one=None, update_many=None, create_one=None, create_many=None,
-            delete_one=None, delete_many=None):
+            update_one=None, update_many=None, create_one=None, create_many=None):
         # pylint: disable=R0913 # Too many arguments
         self.name = name
         self.format = format
@@ -21,8 +20,6 @@ class ModelConfigCustomField:
         self.update_many = update_many
         self.create_one = create_one
         self.create_many = create_many
-        self.delete_one = delete_one
-        self.delete_many = delete_many
 
     def can_perfom(self, operation):
         """
@@ -34,8 +31,6 @@ class ModelConfigCustomField:
             return self.read_one or self.read_many
         if operation == Operation.UPDATE:
             return self.update_one or self.update_many
-        if operation == Operation.DELETE:
-            return self.delete_one or self.delete_many
         raise NotImplementedError()
 
     def perform_one_read(self, instance, authenticated_user, graphql_selection):
@@ -71,4 +66,36 @@ class ModelConfigCustomField:
                     graphql_selection=graphql_selection)
                 for instance in instances
             ]
+        raise NotImplementedError()
+
+    def perform_one_creation(self, instance, authenticated_user, data):
+        """
+            Update the custom field for one instance
+        """
+        if self.create_one:
+            return self.create_one(
+                instance=instance,
+                authenticated_user=authenticated_user,
+                data=data)
+        if self.create_many:
+            return list(self.create_many(
+                instances=[instance],
+                authenticated_user=authenticated_user,
+                data=data))[0]
+        raise NotImplementedError()
+
+    def perform_one_update(self, instance, authenticated_user, data):
+        """
+            Update the custom field for one instance
+        """
+        if self.update_one:
+            return self.update_one(
+                instance=instance,
+                authenticated_user=authenticated_user,
+                data=data)
+        if self.update_many:
+            return list(self.update_many(
+                instances=[instance],
+                authenticated_user=authenticated_user,
+                data=data))[0]
         raise NotImplementedError()

@@ -1,0 +1,55 @@
+{
+  "data": {
+    "people": []
+  }
+}
+
+;
+
+{
+  "data": {
+    "create_person": {
+      "id": 1,
+      "first_name": "Amel",
+      "birth_date": "1991-09-01"
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "update_person": {
+      "id": 1,
+      "first_name": "Amel",
+      "birth_date": "1991-01-09"
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "person": {
+      "id": 1,
+      "birth_date": "1991-01-09",
+      "same_as_birth_date": "1991-01-09"
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "people": [
+      {
+        "id": 1,
+        "birth_date": "1991-01-09",
+        "same_as_birth_date": "1991-01-09"
+      }
+    ]
+  }
+}
