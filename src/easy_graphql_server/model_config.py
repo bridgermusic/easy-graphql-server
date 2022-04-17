@@ -9,7 +9,7 @@ from .conversion import to_graphql_objecttype, to_graphql_argument
 from .types import Required
 from .orm import ORM
 from .model_config_custom_field import ModelConfigCustomField
-from . import exceptions, introspection
+from . import exceptions, introspection, graphql_types
 from .exposition import CustomField
 
 
@@ -22,7 +22,8 @@ class ModelConfig:
         to store configuration for exposed models.
     """
 
-    def __init__(self, schema, orm_model, name=None, plural_name=None,
+    def __init__(self, schema, orm_model,
+            name=None, plural_name=None, types_name=None,
             can_expose=True, cannot_expose=False,
             can_create=True, can_read=True, can_update=True, can_write=True, can_delete=True,
             cannot_create=False, cannot_update=False, cannot_read=False, cannot_write=False,
@@ -30,13 +31,14 @@ class ModelConfig:
             only_when_child_of=None, require_authenticated_user=False, restrict_queried_fields=False,
             has_permission=None, filter_for_user=None,
             on_before_operation=None, on_after_operation=None,
-            custom_fields=None):
+            custom_fields=None, max_depth=None):
         # pylint: disable=unused-argument # for callbacks
 
         # store raw options
         self.schema = schema
         self.require_authenticated_user = require_authenticated_user
         self.only_when_child_of = only_when_child_of
+        self.max_depth = max_depth
         # callbacks
         callbacks_names = ('has_permission', 'filter_for_user', 'on_before_operation', 'on_after_operation')
         self.callbacks = defaultdict(list)
@@ -55,9 +57,6 @@ class ModelConfig:
                             getattr(instance, callback_name)(*args, **kwargs))
                     self.callbacks[callback_name].append(
                         make_callback(callback_name))
-        # name
-        self.name = name or schema.case_manager.convert(orm_model.__name__)
-        self.plural_name = plural_name or f'{self.name}s'
         # custom fields
         self.custom_fields = []
         if custom_fields:
@@ -104,6 +103,10 @@ class ModelConfig:
             model_config = self,
             restrict_queried_fields = restrict_queried_fields,
         )
+        # name
+        self.name = name or schema.case_manager.convert(self.orm_model_manager.get_table_name())
+        self.types_name = types_name or self.name
+        self.plural_name = plural_name or f'{self.name}s'
 
     def expose_methods(self):
         """
@@ -119,8 +122,8 @@ class ModelConfig:
         filters = self.orm_model_manager.get_filters()
         # this is the common output format for all methods
         output_type = to_graphql_objecttype(
-            type_ = self.get_type_mapping(Operation.READ),
-            prefix = self.name,
+            type_ = self.get_type_mapping(Operation.READ, require_non_nullable=True),
+            prefix = self.types_name,
             schema = self.schema,
         )
         # expose create method
@@ -223,7 +226,7 @@ class ModelConfig:
     # types computation
 
     def get_type_mapping(self, operation=None, exclude=None, depth=0, linked_field=None,
-            with_custom_fields=True):
+            with_custom_fields=True, max_depth=None, require_non_nullable=False):
         """
             Return a `dict` from `str` to GraphQL types, corresponding to the model.
 
@@ -233,6 +236,9 @@ class ModelConfig:
         fields_info = self.orm_model_manager.fields_info
         exclude = exclude or set()
         mapping = {}
+        # check depth
+        if self.max_depth is not None and (max_depth is None or self.max_depth < max_depth):
+            max_depth = self.max_depth
         # no mapping for deletion
         if operation == Operation.DELETE:
             return {}
@@ -248,39 +254,46 @@ class ModelConfig:
             # map
             mapping[field_name] = graphql_type
         # foreign & related fields...
-        for field_name, field in fields_info.linked.items():
-            # ensure the field is exposed for this operation
-            if operation is not None and not self.can_perform(operation, field_name):
-                continue
-            # retrieve other model config
-            other_model_config = self.schema.get_model_config(orm_model=field.orm_model)
-            if other_model_config is None:
-                continue
-            # only_when_child_of is important
-            if other_model_config.only_when_child_of and not issubclass(
-                    self.orm_model_manager.orm_model, other_model_config.only_when_child_of):
-                continue
-            # these fields are at stake, and will be later excluded
-            _exclude = {(self, field_name), (other_model_config, field.field_name)}
-            if exclude & _exclude:
-                continue
-            # ...with recursion
-            mapping[field_name] = other_model_config.get_type_mapping(
-                operation = operation,
-                exclude = exclude | _exclude,
-                depth = depth + 1,
-                linked_field = field,
-                with_custom_fields = with_custom_fields)
-            # related are presented as collections
-            if field_name in fields_info.related:
-                mapping[field_name] = [mapping[field_name]]
+        if max_depth is None or max_depth > 0:
+            for field_name, field in fields_info.linked.items():
+                # ensure the field is exposed for this operation
+                if operation is not None and not self.can_perform(operation, field_name):
+                    continue
+                # retrieve other model config
+                other_model_config = self.schema.get_model_config(orm_model=field.orm_model)
+                if other_model_config is None:
+                    continue
+                # only_when_child_of is important
+                if other_model_config.only_when_child_of and not issubclass(
+                        self.orm_model_manager.orm_model, other_model_config.only_when_child_of):
+                    continue
+                # these fields are at stake, and will be later excluded
+                _exclude = {(self, field_name), (other_model_config, field.field_name)}
+                if exclude & _exclude:
+                    continue
+                # ...with recursion
+                mapping[field_name] = other_model_config.get_type_mapping(
+                    operation = operation,
+                    exclude = exclude | _exclude,
+                    depth = depth + 1,
+                    max_depth = (max_depth - 1) if max_depth is not None else None,
+                    linked_field = field,
+                    with_custom_fields = with_custom_fields,
+                    require_non_nullable = require_non_nullable)
+                # related are presented as collections
+                if field_name in fields_info.related:
+                    mapping[field_name] = [mapping[field_name]]
         # apply non null when necessary
         if operation == Operation.CREATE:
             for field_name, graphql_type in list(mapping.items()):
                 if field_name in fields_info.mandatory:
                     if linked_field is not None and field_name == linked_field.value_field_name:
                         continue
-                    mapping[field_name] = Required(graphql_type)
+                    mapping[field_name] = self._make_required(graphql_type)
+        if require_non_nullable:
+            for field_name, graphql_type in list(mapping.items()):
+                if field_name not in fields_info.nullable:
+                    mapping[field_name] = self._make_required(graphql_type)
         # custom fields
         if with_custom_fields:
             for custom_field in self.custom_fields:
@@ -288,6 +301,18 @@ class ModelConfig:
                     mapping[custom_field.name] = custom_field.format
         # result
         return mapping
+
+    # required
+
+    @classmethod
+    def _make_required(cls, graphql_type):
+        if isinstance(graphql_type, (graphql_types.NonNull, Required)):
+            return graphql_type
+        if isinstance(graphql_type, graphql_types.List):
+            return graphql_types.NonNull(graphql_types.List(graphql_types.NonNull(graphql_type.of_type)))
+        if isinstance(graphql_type, list):
+            return Required([Required(graphql_type[0])])
+        return Required(graphql_type)
 
     # callbacks
 

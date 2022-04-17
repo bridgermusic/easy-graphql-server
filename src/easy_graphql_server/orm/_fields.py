@@ -64,6 +64,8 @@ class FieldsInfo: # pylint: disable=too-few-public-methods
         # mandatory fields upon creation as `set[str]`
         self.mandatory = set()
         # mandatory fields upon creation as `set[str]`
+        self.nullable = set()
+        # mandatory fields upon creation as `set[str]`
         self.custom = set()
 
     def compute_linked(self):

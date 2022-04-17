@@ -20,10 +20,15 @@ class ModelManager:
         self.orm_model = orm_model
         self.model_config = model_config
         self.restrict_queried_fields = restrict_queried_fields
-        self.fields_info = self.get_fields_info()
-        self.fields_info.compute_linked()
-        for custom_field in self.model_config.custom_fields:
-            self.fields_info.custom.add(custom_field.name)
+
+    @property
+    def fields_info(self):
+        if not hasattr(self, '_fields_info'):
+            self._fields_info = self.get_fields_info()
+            self._fields_info.compute_linked()
+            for custom_field in self.model_config.custom_fields:
+                self._fields_info.custom.add(custom_field.name)
+        return self._fields_info
 
     # metadata extraction
 
@@ -74,6 +79,9 @@ class ModelManager:
                 filters[f'{prefixed_field_name}__isnull'] = graphql_types.Boolean
         # result
         return filters
+
+    def get_table_name(self):
+        raise NotImplementedError()
 
     # CRUD operations on ORM model instances
 

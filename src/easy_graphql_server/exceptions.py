@@ -56,10 +56,14 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 r"mean (?P<suggestions>.*?)\?$"),
             ('WRONGLY_TYPED_ARGUMENT',
                 r"^Expected value of type '(?P<expected_field_type>.*?)', found (?P<provided_field_value>.*?)\."),
+            ('NON_NULL_FIELD',
+                r"^Cannot return null for non\-nullable field (?P<field_path>)\."),
             ('SYNTAX_ERROR',
                 r"^Syntax error: (?P<message>.*?)$"),
             ('WRONG_ENUM_VALUE',
                 r"^Value '(?P<provided_field_value>.*?)' does not exist in '(?P<enum_type>.*?)' enum\.$"),
+            ('UNKOWN_TYPE',
+                r"^Unknown type '(?P<unkown_type>.*?)'\."),
         )
         for possible_error, regex in possible_errors:
             match = re.search(regex, message)

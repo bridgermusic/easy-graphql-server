@@ -20,6 +20,7 @@ class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
 
 class ExposedPerson(schema.ExposedModel):
     orm_model = Person
+    name = 'person'
     plural_name = 'people'
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
         'houses', 'home', 'daily_occupations', 'gender', )
@@ -38,6 +39,7 @@ class ExposedMe(schema.ExposedQuery):
 
 class ExposedDailyOccupation(schema.ExposedModel):
     orm_model = DailyOccupation
+    name = 'daily_occupation'
     only_when_child_of = Person
 
 class ExposedHouseTenantsOccupations(easy_graphql_server.CustomField):
@@ -61,8 +63,10 @@ class ExposedHouseTenantsOccupations(easy_graphql_server.CustomField):
 
 class ExposedHouse(schema.ExposedModel):
     orm_model = House
+    name = 'house'
     custom_fields = [ExposedHouseTenantsOccupations]
 
 class ExposedBankAccount(schema.ExposedModel):
     orm_model = BankAccount
+    name = 'bank_account'
     require_authenticated_user = True

@@ -173,7 +173,7 @@ def parse_jsonstring_literal(value_node: ValueNode, _variables: Any = None) -> d
     return parse_jsonstring_value(value_node.value)
 
 JSONString = graphql.type.GraphQLScalarType(
-    name = 'JSON',
+    name = 'JSONString',
     description = 'JSON in a string',
     serialize = serialize_jsonstring,
     parse_value = parse_jsonstring_value,

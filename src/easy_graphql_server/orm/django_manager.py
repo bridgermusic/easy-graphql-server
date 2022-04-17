@@ -42,6 +42,9 @@ class DjangoModelManager(ModelManager):
             # is it mandatory?
             if not field.blank:
                 fields_info.mandatory |= {field.name, field.attname}
+            # is it nullable?
+            if field.null:
+                fields_info.nullable |= {field.name, field.attname}
             # is it a foreign key?
             if isinstance(field, django.db.models.fields.related.ForeignKey):
                 # field to which the foreign key is referring
@@ -68,6 +71,9 @@ class DjangoModelManager(ModelManager):
                 value_field_name = related.field.attname)
         # return result
         return fields_info
+
+    def get_table_name(self):
+        return self.orm_model._meta.db_table
 
     # CRUD operations on ORM model instances
 
@@ -547,7 +553,7 @@ class DjangoModelManager(ModelManager):
         # enum
         if getattr(field, 'choices', None):
             graphql_type = conversion.to_graphql_enum_from_choices(
-                prefix = f'{self.model_config.name}__{field.name}',
+                prefix = f'{self.model_config.types_name}__{field.name}',
                 choices = field.choices,
                 schema = self.model_config.schema,
             )

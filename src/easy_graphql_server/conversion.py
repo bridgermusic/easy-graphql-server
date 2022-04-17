@@ -65,6 +65,12 @@ def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=T
         }, description=description)
     return graphql_type
 
+def to_graphql_enum_from_enum(prefix, enum):
+    """
+        Create a `GraphQLEnumType` from a subclass of native Python Enum.
+    """
+    pass
+
 def to_graphql_type(type_, prefix, for_input=False, schema=None):
     """
         Returns a GraphQL type given a `GraphQLType`, a Python native type,
