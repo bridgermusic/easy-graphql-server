@@ -162,8 +162,7 @@ class ModelManager:
 
     # methods should be executed within an atomic database transaction
 
-    @staticmethod
-    def decorate(method):
+    def decorate(self, method):
         """
             Decorator to execute a given method within a transaction, using
             the corresponding ORM.

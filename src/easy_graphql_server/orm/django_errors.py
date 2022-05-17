@@ -3,7 +3,7 @@ import inspect
 from .. import exceptions
 
 
-def reraise_django_validation_error(graphql_path, exception):
+def reraise_from_django_validation_error(graphql_path, exception):
 
     def serialize(issue, path, field_name=None):
         if hasattr(issue, 'error_dict'):

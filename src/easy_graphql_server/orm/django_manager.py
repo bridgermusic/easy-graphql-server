@@ -17,7 +17,7 @@ from .. import graphql_types
 from .. import conversion
 from .. import exceptions
 from ..operations import Operation
-from .django_errors import reraise_django_validation_error
+from .django_errors import reraise_from_django_validation_error
 from ._manager import ModelManager
 from ._fields import FieldsInfo, ForeignField, RelatedField
 
@@ -77,7 +77,8 @@ class DjangoModelManager(ModelManager):
 
     # CRUD operations on ORM model instances
 
-    def create_one(self, authenticated_user, graphql_path, graphql_selection=None, ensure_permission=True, **data):
+    def create_one(self, authenticated_user, graphql_path, graphql_selection=None, ensure_permission=True,
+            depth=0, **data):
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -89,6 +90,7 @@ class DjangoModelManager(ModelManager):
                     authenticated_user = authenticated_user,
                     graphql_path = graphql_path + [field_name],
                     ensure_permission = False,
+                    depth = depth + 1,
                     **data.pop(field_name))
                 data[field_name] = foreign_instance
             elif field_name in self.fields_info.related:
@@ -105,7 +107,7 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             data = custom_fields_data)
         # pre-save trigger
-        self.model_config.on_before_operation(instance, authenticated_user, Operation.CREATE, data)
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.CREATE, data, depth)
         # enforce permissions
         if ensure_permission:
             self.model_config.ensure_permission(
@@ -115,13 +117,14 @@ class DjangoModelManager(ModelManager):
                 graphql_path = graphql_path,
                 data = data,
             )
-        # validation
         try:
+            # validation
             instance.full_clean()
+            # save
+            instance.save()
         except django.core.exceptions.ValidationError as exception:
-            reraise_django_validation_error(graphql_path, exception)
-        # save
-        instance.save()
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # related data
         for field_name, children_data in related_data.items():
             for related_index, related_data in enumerate(children_data):
@@ -133,6 +136,7 @@ class DjangoModelManager(ModelManager):
                     authenticated_user = authenticated_user,
                     graphql_path = graphql_path + [field_name, related_index],
                     ensure_permission = False,
+                    depth = depth + 1,
                     **related_data)
                 getattr(instance, field_name).add(related_instance)
         # validation
@@ -140,9 +144,10 @@ class DjangoModelManager(ModelManager):
             if callable(getattr(instance, 'clean_related', None)):
                 instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
-            reraise_django_validation_error(graphql_path, exception)
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # post-save trigger
-        self.model_config.on_after_operation(instance, authenticated_user, Operation.CREATE, data)
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.CREATE, data, depth)
         # result
         if graphql_selection is None:
             return instance
@@ -190,7 +195,7 @@ class DjangoModelManager(ModelManager):
         ]
 
     def update_one(self, authenticated_user, graphql_path, graphql_selection=None,
-            _=None, **filters):
+            _=None, depth=0, **filters):
         # variable that contains new data
         data = _ or {}
         # retrieve the instance to update
@@ -208,7 +213,7 @@ class DjangoModelManager(ModelManager):
             data = data,
         )
         # pre-update trigger
-        self.model_config.on_before_operation(instance, authenticated_user, Operation.UPDATE, data)
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.UPDATE, data, depth)
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -226,6 +231,7 @@ class DjangoModelManager(ModelManager):
                         data[field_name] = child_model_config.orm_model_manager.create_one(
                             authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
+                            depth = depth + 1,
                             **child_data)
                     # if identifier provided, update existing instance
                     else:
@@ -233,6 +239,7 @@ class DjangoModelManager(ModelManager):
                             authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
                             _ = child_data,
+                            depth = depth + 1,
                             **{child_model_config.orm_model_manager.fields_info.primary:
                                 child_identifier})
             # related fields
@@ -250,13 +257,15 @@ class DjangoModelManager(ModelManager):
         # direct attributes
         for key, value in data.items():
             setattr(instance, key, value)
-        # validation (raise an easy_graphql_server exception instead of a Django one)
+        # validate & save (raise an easy_graphql_server exception instead of a Django one)
         try:
+            # validation
             instance.clean()
+            # save instance
+            instance.save()
         except django.core.exceptions.ValidationError as exception:
-            reraise_django_validation_error(graphql_path, exception)
-        # save instance
-        instance.save()
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # related data
         for field_name, children_data in related_data.items():
             related_field = self.fields_info.related[field_name]
@@ -273,6 +282,7 @@ class DjangoModelManager(ModelManager):
                         authenticated_user = authenticated_user,
                         graphql_path = graphql_path + [field_name, child_index],
                         _ = child_data,
+                        depth = depth + 1,
                         **{child_model_config.orm_model_manager.fields_info.primary:
                             child_identifier})
                     # store identifier
@@ -290,6 +300,7 @@ class DjangoModelManager(ModelManager):
                     child_instance = child_model_config.orm_model_manager.create_one(
                         authenticated_user = authenticated_user,
                         graphql_path = graphql_path + [field_name, child_index],
+                        depth = depth + 1,
                         **dict({related_field.value_field_name: instance.pk}, **child_data))
                     getattr(instance, field_name).add(child_instance)
         # validation (raise an easy_graphql_server exception instead of a Django one)
@@ -298,9 +309,10 @@ class DjangoModelManager(ModelManager):
             if callable(getattr(instance, 'clean_related', None)):
                 instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
-            reraise_django_validation_error(graphql_path, exception)
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # post-update trigger
-        self.model_config.on_after_operation(instance, authenticated_user, Operation.UPDATE, data)
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.UPDATE, data, depth)
         # result
         if graphql_selection is None:
             return instance
@@ -330,9 +342,9 @@ class DjangoModelManager(ModelManager):
         else:
             pre_result = {}
         # actually perform operations
-        self.model_config.on_before_operation(instance, authenticated_user, Operation.DELETE)
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.DELETE, None, 0)
         instance.delete()
-        self.model_config.on_after_operation(instance, authenticated_user, Operation.DELETE)
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.DELETE, None, 0)
         # compute & return result
         result = self._instance_to_dict(
             authenticated_user = authenticated_user,
@@ -346,14 +358,17 @@ class DjangoModelManager(ModelManager):
 
     # methods should be executed within an atomic database transaction
 
-    @staticmethod
-    def decorate(method):
+    def decorate(self, method, graphql_path=None):
         """
             Every exposed method will have to go through this decorator.
         """
         def decorated(*args, **kwargs):
             with django.db.transaction.atomic():
-                return method(*args, **kwargs)
+                try:
+                    return method(*args, **kwargs)
+                except django.core.exceptions.ValidationError as exception:
+                    reraise_from_django_validation_error(
+                        graphql_path or kwargs['graphql_path'], exception)
         return decorated
 
     # helpers for reading
@@ -382,9 +397,9 @@ class DjangoModelManager(ModelManager):
             raise exceptions.NotFoundError(filters) from error
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
-            ensure_permission=True):
+            ensure_permission=True, depth=0):
         # pre-read trigger
-        self.model_config.on_before_operation(instance, authenticated_user, Operation.READ)
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.READ, None, depth)
         # enforce permissions when requested
         if ensure_permission:
             self.model_config.ensure_permission(
@@ -421,6 +436,7 @@ class DjangoModelManager(ModelManager):
                             graphql_selection = graphql_subselection,
                             graphql_path = graphql_path + [field_name, child_index],
                             ensure_permission = False,
+                            depth = depth + 1,
                         )
                         for child_index, child_instance
                         in enumerate(children_instances)
@@ -436,9 +452,10 @@ class DjangoModelManager(ModelManager):
                     graphql_selection = graphql_subselection,
                     graphql_path = graphql_path + [field_name],
                     ensure_permission = ensure_permission,
+                    depth = depth + 1,
                 )
         # post-read trigger
-        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ)
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ, None, depth)
         return result
 
     def build_queryset(self, graphql_selection, authenticated_user):

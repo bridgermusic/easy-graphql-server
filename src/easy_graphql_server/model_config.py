@@ -403,21 +403,21 @@ class ModelConfig:
 
     # triggers
 
-    def on_before_operation(self, instance, authenticated_user, operation, data=None):
+    def on_before_operation(self, instance, authenticated_user, operation, data=None, depth=0):
         """
             Execute pre-trigger(s) for given instance with given parameters.
         """
         if not isinstance(instance, self.orm_model_manager.orm_model):
             raise Exception(f'Unexpected instance {instance}, should be of type {self.orm_model_manager.orm_model}')
-        return list(self._call('on_before_operation', instance, authenticated_user, operation, data))
+        return list(self._call('on_before_operation', instance, authenticated_user, operation, data, depth))
 
-    def on_after_operation(self, instance, authenticated_user, operation, data=None):
+    def on_after_operation(self, instance, authenticated_user, operation, data=None, depth=0):
         """
             Execute post-trigger(s) for given instance with given parameters.
         """
         if not isinstance(instance, self.orm_model_manager.orm_model):
             raise Exception(f'Unexpected instance {instance}, should be of type {self.orm_model_manager.orm_model}')
-        return list(self._call('on_after_operation', instance, authenticated_user, operation, data))
+        return list(self._call('on_after_operation', instance, authenticated_user, operation, data, depth))
 
     # custom field
 
