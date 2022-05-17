@@ -10,6 +10,7 @@ from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
 from graphql.type.validate import validate_schema # pylint: disable=no-name-in-module,import-error
 from graphql.utilities import get_introspection_query # pylint: disable=no-name-in-module,import-error
 from graphql.graphql import graphql_sync
+from graphql.language.ast import FieldNode, InlineFragmentNode, FragmentSpreadNode
 
 from . import exceptions, exposition, introspection
 from .conversion import to_graphql_type, to_graphql_argument
@@ -332,7 +333,7 @@ class Schema:
                     kwargs[pass_authenticated_user] = authenticated_user
                 if pass_graphql_selection:
                     kwargs[pass_graphql_selection] = self._get_graphql_selection(
-                        info.field_nodes[0].selection_set)
+                        info.field_nodes[0].selection_set, info.fragments)
                 if pass_graphql_path:
                     kwargs[pass_graphql_path] = [type_, info.path.key]
                 # executed method
@@ -345,8 +346,10 @@ class Schema:
 
     # using GraphQL core AST tree to return the GraphQL selection
 
+
+
     @classmethod
-    def _get_graphql_selection(cls, selection_set):
+    def _get_graphql_selection(cls, selection_set, fragments, visited_fragments=None):
         """
             Return the GraphQL selection as a mapping.
 
@@ -376,10 +379,28 @@ class Schema:
             }
             ```
         """
-        return {
-            selection.name.value: (
-                cls._get_graphql_selection(selection.selection_set)
-                if selection.selection_set else None)
-            for selection in selection_set.selections
-            if selection.name.value != '__typename'
-        }
+        # variables initialization
+        if visited_fragments is None:
+            visited_fragments = set()
+        result = {}
+        # browse selection
+        for selection in selection_set.selections:
+            if isinstance(selection, FieldNode):
+                name = selection.alias.value if selection.alias else selection.name.value
+                if name == '__typename':
+                    continue
+                result[name] = (
+                    cls._get_graphql_selection(selection.selection_set, fragments, visited_fragments)
+                    if getattr(selection, 'selection_set', None) else None)
+            elif isinstance(selection, InlineFragmentNode):
+                raise NotImplementedError()
+            elif isinstance(selection, FragmentSpreadNode):
+                fragment = fragments.get(selection.name.value)
+                if not fragment or not hasattr(fragment, 'selection_set'):
+                    continue
+                result.update(
+                    cls._get_graphql_selection(
+                        fragment.selection_set, fragments, visited_fragments | {selection.name.value})
+                )
+        # the end!
+        return result

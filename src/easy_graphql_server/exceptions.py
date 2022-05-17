@@ -14,9 +14,9 @@ class BaseError(Exception):
     """
         Base exception for `easy_graphql_server`
     """
-    def __init__(self, error, payload):
+    def __init__(self, type_, payload):
         message = custom_json.dumps({
-            'error': error,
+            'type': type_,
             'payload': payload,
         })
         Exception.__init__(self, message)
@@ -31,7 +31,7 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
         Gives more details, in the same format as BaseError output.
     """
     if original_error is None or not isinstance(original_error, BaseError):
-        error = None
+        type_ = None
         # parse original error message
         possible_errors = (
             ('MISSING_ARGUMENT',
@@ -62,20 +62,20 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                 r"^Syntax error: (?P<message>.*?)$"),
             ('WRONG_ENUM_VALUE',
                 r"^Value '(?P<provided_field_value>.*?)' does not exist in '(?P<enum_type>.*?)' enum\.$"),
-            ('UNKOWN_TYPE',
-                r"^Unknown type '(?P<unkown_type>.*?)'\."),
+            ('UNKNOWN_TYPE',
+                r"^Unknown type '(?P<UNKNOWN_TYPE>.*?)'\."),
         )
         for possible_error, regex in possible_errors:
             match = re.search(regex, message)
             if match:
-                error = possible_error
+                type_ = possible_error
                 payload = match.groupdict() or {}
                 break
-        if error is None:
-            error = 'GRAPHQL'
+        if type_ is None:
+            type_ = 'GRAPHQL'
             payload = {'message': message}
         # parse suggestions
-        if error in ('UNEXPECTED_QUERIED_FIELD', 'METHOD_NOT_FOUND'):
+        if type_ in ('UNEXPECTED_QUERIED_FIELD', 'METHOD_NOT_FOUND'):
             if 'suggestions' in payload:
                 payload['suggestions'] = re.findall(r"'([^']+)'", payload['suggestions'])
             else:
@@ -98,11 +98,10 @@ def graphqlerror__init__(self, message, nodes=None, source=None, positions=None,
                     ready = False
             payload['path'] = path = path[::-1]
         # compute message for path
-        if error and payload:
-            message = custom_json.dumps({
-                'error': error,
-                'payload': payload,
-            })
+        message = custom_json.dumps({
+            'type': type_,
+            'payload': payload,
+        })
     return _graphqlerror__init__(
         self, message, nodes, source, positions, path, original_error, extensions)
 setattr(GraphQLError, '__init__', graphqlerror__init__)

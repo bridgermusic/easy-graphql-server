@@ -282,7 +282,10 @@ class ModelConfig:
                     require_non_nullable = require_non_nullable)
                 # related are presented as collections
                 if field_name in fields_info.related:
-                    mapping[field_name] = [mapping[field_name]]
+                    if require_non_nullable:
+                        mapping[field_name] = Required([Required(mapping[field_name])])
+                    else:
+                        mapping[field_name] = [mapping[field_name]]
         # apply non null when necessary
         if operation == Operation.CREATE:
             for field_name, graphql_type in list(mapping.items()):

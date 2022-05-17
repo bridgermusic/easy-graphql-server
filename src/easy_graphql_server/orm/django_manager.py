@@ -508,11 +508,12 @@ class DjangoModelManager(ModelManager):
                     orm_model = related_field.orm_model)
                 prefetch_related.append(
                     django.db.models.Prefetch(
-                        field_name,
+                        f'{field_prefix}{field_name}',
                         queryset = related_model_config.orm_model_manager.build_queryset(
-                            graphql_selection = dict({related_field.value_field_name: None},
-                                **graphql_subselection),
                             authenticated_user = authenticated_user,
+                            graphql_selection = dict(
+                                {related_field.value_field_name: None},
+                                **graphql_subselection),
                         )
                     )
                 )
