@@ -155,7 +155,6 @@ class Schema:
             graphql_schema = self._get_graphql_schema()
         for error in validate_schema(graphql_schema):
             raise error
-        self.dirty = False
 
     def get_model_config(self, orm_model=None, name=None):
         """

@@ -110,7 +110,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
                 '(consider changing the order of expositions declaration)')
         mapping = model_config.get_type_mapping(
             operation = type_.operation,
-            with_custom_fields = False)
+            with_custom_fields = True)
         if not type_.exclude and not type_.additional:
             return to_graphql_type(
                 type_ = mapping,
@@ -131,7 +131,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
         if model_config is None:
             raise ValueError(f'No model in schema with name `{type_.model_name}` '
                 '(consider changing the order of expositions declaration)')
-        mapping = model_config.get_type_mapping(with_custom_fields = False)
+        mapping = model_config.get_type_mapping(with_custom_fields = True)
         try:
             for field_name in type_.field_path:
                 mapping = mapping[field_name]
