@@ -3,14 +3,14 @@
 from re import search
 from setuptools import setup, find_packages
 
-version = '0.9.12',
+version = '0.9.13',
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
 setup(
     name='easy_graphql_server',
-    version = '0.9.12',
+    version = '0.9.13',
     description='Easy to use abstraction layer for GraphQL, with support for Django ORM.',
     long_description=readme,
     long_description_content_type='text/markdown',

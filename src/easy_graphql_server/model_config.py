@@ -46,17 +46,18 @@ class ModelConfig:
             local_callback = locals().get(callback_name)
             if local_callback:
                 self.callbacks[callback_name].append(local_callback)
-            model_callback = orm_model.__dict__.get(callback_name)
+            model_callback_name = f'egs_{callback_name}'
+            model_callback = orm_model.__dict__.get(model_callback_name)
             if model_callback:
                 if isinstance(model_callback, (staticmethod, classmethod)):
-                    callback = getattr(orm_model, callback_name)
+                    callback = getattr(orm_model, model_callback_name)
                     self.callbacks[callback_name].append(callback)
                 else:
-                    def make_callback(callback_name):
+                    def make_callback(model_callback_name):
                         return (lambda instance, *args, **kwargs:
-                            getattr(instance, callback_name)(*args, **kwargs))
+                            getattr(instance, model_callback_name)(*args, **kwargs))
                     self.callbacks[callback_name].append(
-                        make_callback(callback_name))
+                        make_callback(model_callback_name))
         # custom fields
         self.custom_fields = []
         if custom_fields:
