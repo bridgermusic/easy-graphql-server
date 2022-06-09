@@ -174,6 +174,18 @@ class DjangoModelManager(ModelManager):
         )
 
     def read_many(self, authenticated_user, graphql_path, graphql_selection, **filters):
+        # build queryset
+        queryset = self._read(
+            graphql_selection = graphql_selection,
+            authenticated_user = authenticated_user,
+            **filters
+        )
+        # build results, according to current limits
+        if self.model_config.limit > -1:
+            results = queryset[:self.model_config.limit]
+        else:
+            results = queryset.all()
+        # return formatted result
         return [
             self._instance_to_dict(
                 authenticated_user = authenticated_user,
@@ -182,11 +194,7 @@ class DjangoModelManager(ModelManager):
                 graphql_path = graphql_path,
                 ensure_permission = False,
             )
-            for instance in self._read(
-                graphql_selection = graphql_selection,
-                authenticated_user = authenticated_user,
-                **filters
-            ).all()
+            for instance in results
             if self.model_config.has_permission(
                 operation = Operation.READ,
                 instance = instance,

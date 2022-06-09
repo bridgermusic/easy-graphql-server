@@ -31,7 +31,7 @@ class ModelConfig:
             only_when_child_of=None, require_authenticated_user=False, restrict_queried_fields=False,
             has_permission=None, filter_for_user=None,
             on_before_operation=None, on_after_operation=None,
-            custom_fields=None, max_depth=None):
+            custom_fields=None, max_depth=None, limit=-1):
         # pylint: disable=unused-argument # for callbacks
 
         # store raw options
@@ -39,6 +39,7 @@ class ModelConfig:
         self.require_authenticated_user = require_authenticated_user
         self.only_when_child_of = only_when_child_of
         self.max_depth = max_depth
+        self.limit = limit
         # callbacks
         callbacks_names = ('has_permission', 'filter_for_user', 'on_before_operation', 'on_after_operation')
         self.callbacks = defaultdict(list)

@@ -38,7 +38,7 @@ class Schema:
 
     # public methods
 
-    def __init__(self, debug=False, casing=Casing.SNAKE, restrict_models_queried_fields=False, models_max_depth=None):
+    def __init__(self, debug=False, casing=Casing.SNAKE, restrict_models_queried_fields=False, models_max_depth=None, models_limit=-1):
         self.methods = defaultdict(dict)
         self.subclasses = []
         self.dirty = True
@@ -49,6 +49,7 @@ class Schema:
         self.debug = debug
         self.restrict_models_queried_fields = restrict_models_queried_fields
         self.models_max_depth = models_max_depth
+        self.models_limit = models_limit
         # abstract parent classes
         class Exposed(exposition.Exposed):
             # pylint: disable=too-few-public-methods,missing-class-docstring
@@ -119,6 +120,8 @@ class Schema:
             options['restrict_queried_fields'] = self.restrict_models_queried_fields
         if 'max_depth' not in options:
             options['max_depth'] = self.models_max_depth
+        if 'limit' not in options:
+            options['limit'] = self.models_limit
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
         orm_model_manager_class = model_config.orm_model_manager.__class__
