@@ -215,42 +215,44 @@ class Schema:
 
     def _expose_method(self, type_, name, method, input_format=None, output_format=None,
             pass_graphql_selection=False, pass_graphql_path=False,
-            pass_authenticated_user=False, require_authenticated_user=False):
+            pass_authenticated_user=False, require_authenticated_user=False, deprecation_message=None):
         self.methods[type_][name] = GraphQLField(
-        # output format
-        type_ = to_graphql_type(
-            type_ = output_format,
-            prefix = name,
-            for_input = False,
-            schema = self,
-        ) if output_format else None,
-        # input format
-        args = to_graphql_argument(
-            type_ = input_format,
-            prefix = name,
-            schema = self,
-        ) if input_format else None,
-        # resolve method
-        resolve = self._make_callback(
-            type_ = type_,
-            method = method,
-            pass_graphql_selection = (
-                'graphql_selection'
-                if pass_graphql_selection is True else
-                pass_graphql_selection
+            # output format
+            type_ = to_graphql_type(
+                type_ = output_format,
+                prefix = name,
+                for_input = False,
+                schema = self,
+            ) if output_format else None,
+            # input format
+            args = to_graphql_argument(
+                type_ = input_format,
+                prefix = name,
+                schema = self,
+            ) if input_format else None,
+            # resolve method
+            resolve = self._make_callback(
+                type_ = type_,
+                method = method,
+                pass_graphql_selection = (
+                    'graphql_selection'
+                    if pass_graphql_selection is True else
+                    pass_graphql_selection
+                ),
+                pass_graphql_path = (
+                    'graphql_path'
+                    if pass_graphql_path is True else
+                    pass_graphql_path
+                ),
+                pass_authenticated_user = (
+                    'authenticated_user'
+                    if pass_authenticated_user is True else
+                    pass_authenticated_user
+                ),
+                require_authenticated_user = require_authenticated_user,
             ),
-            pass_graphql_path = (
-                'graphql_path'
-                if pass_graphql_path is True else
-                pass_graphql_path
-            ),
-            pass_authenticated_user = (
-                'authenticated_user'
-                if pass_authenticated_user is True else
-                pass_authenticated_user
-            ),
-            require_authenticated_user = require_authenticated_user,
-        ),
+            # deprecation
+            deprecation_reason = deprecation_message,
         )
         # schema is not up to date anymore
         self.dirty = True
