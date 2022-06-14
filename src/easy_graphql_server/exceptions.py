@@ -127,7 +127,7 @@ class InternalError(BaseError):
                     if exception_class.__module__ == 'builtins' else
                     f'{exception_class.__module__}.{exception_class.__qualname__}'
                 ),
-                'args': exception.args,
+                'args': list(map(str, exception.args)),
                 'traceback': [
                     f'{traceback.tb_frame.f_code.co_filename}:{traceback.tb_lineno}'
                     for traceback in tracebacks

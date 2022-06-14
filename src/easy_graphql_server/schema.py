@@ -85,13 +85,7 @@ class Schema:
         if not inspect.isclass(cls):
             raise ValueError('Parameter to `expose()` method should be a class, '
                 f'`{cls}` was given instead.')
-        accepted_parent_classes = (
-            exposition.ExposedQuery, exposition.ExposedMutation, exposition.ExposedModel)
-        if not issubclass(cls, accepted_parent_classes):
-            raise ValueError('Parameter to `expose()` method should be a subclass of either '
-                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or '
-                f'`exposition.ExposedModel`, but `{cls}` was found instead')
-        self.subclasses.append(cls)
+        self._expose_from_subclass(cls)
 
     def expose_query(self, **options):
         """
@@ -261,38 +255,43 @@ class Schema:
         # schema is not up to date anymore
         self.dirty = True
 
+    def _expose_from_subclass(self, subclass):
+        subclass_attributes = introspection.get_public_class_attributes(subclass)
+        # different parent classes, different results
+        if issubclass(subclass, exposition.ExposedModel):
+            message = ' when subclassing `ExposedModel`'
+            exposition_method = self.expose_model
+            validation_method = ModelConfig
+            excluded_arguments = ('self', 'schema')
+        elif issubclass(subclass, exposition.ExposedQuery):
+            message = ' when subclassing `ExposedQuery`'
+            exposition_method = self.expose_query
+            validation_method = self._expose_method
+            excluded_arguments = ('self', 'type_')
+        elif issubclass(subclass, exposition.ExposedMutation):
+            message = ' when subclassing `ExposedMutation`'
+            exposition_method = self.expose_mutation
+            validation_method = self._expose_method
+            excluded_arguments = ('self', 'type_')
+        else:
+            raise ValueError('Parameter to `expose()` method should be a subclass of either '
+                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or '
+                f'`exposition.ExposedModel`, but `{subclass}` was found instead')
+        # attributes validation
+        introspection.validate_class_attributes_against_method_arguments(
+            cls = subclass,
+            method = validation_method,
+            excluded_arguments = excluded_arguments,
+            message = message)
+        # actual exposition
+        exposition_method(**subclass_attributes)
+
     def _collect_from_classes(self):
         for subclass in introspection.get_subclasses(self.Exposed):
             if subclass not in (self.ExposedModel, self.ExposedQuery, self.ExposedMutation):
                 self.expose(subclass)
         for subclass in self.subclasses:
-            subclass_attributes = introspection.get_public_class_attributes(subclass)
-            # different parent classes, different results
-            if issubclass(subclass, exposition.ExposedModel):
-                message = ' when subclassing `ExposedModel`'
-                exposition_method = self.expose_model
-                validation_method = ModelConfig
-                excluded_arguments = ('self', 'schema')
-            elif issubclass(subclass, exposition.ExposedQuery):
-                message = ' when subclassing `ExposedQuery`'
-                exposition_method = self.expose_query
-                validation_method = self._expose_method
-                excluded_arguments = ('self', 'type_')
-            elif issubclass(subclass, exposition.ExposedMutation):
-                message = ' when subclassing `ExposedMutation`'
-                exposition_method = self.expose_mutation
-                validation_method = self._expose_method
-                excluded_arguments = ('self', 'type_')
-            else:
-                raise ValueError(f'Unrecognized class: {subclass}')
-            # attributes validation
-            introspection.validate_class_attributes_against_method_arguments(
-                cls = subclass,
-                method = validation_method,
-                excluded_arguments = excluded_arguments,
-                message = message)
-            # actual exposition
-            exposition_method(**subclass_attributes)
+            self._expose_from_subclass(subclass)
 
 
     # build schema when modified, returned cached version otherwise
