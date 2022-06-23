@@ -257,18 +257,18 @@ class DjangoModelManager(ModelManager):
         custom_fields_data = self._extract_custom_fields_data(
             operation = Operation.UPDATE,
             data = data)
+        # direct attributes
+        for key, value in data.items():
+            setattr(instance, key, value)
         # custom fields definition
         self._update_custom_fields(
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
-        # direct attributes
-        for key, value in data.items():
-            setattr(instance, key, value)
         # validate & save (raise an easy_graphql_server exception instead of a Django one)
         try:
             # validation
-            instance.clean()
+            instance.full_clean()
             # save instance
             instance.save()
         except django.core.exceptions.ValidationError as exception:
