@@ -36,7 +36,12 @@ class ModelConfig:
 
         # store raw options
         self.schema = schema
-        self.require_authenticated_user = require_authenticated_user
+        if require_authenticated_user is False:
+            self.require_authenticated_user = ()
+        elif require_authenticated_user is True:
+            self.require_authenticated_user = (Operation.CREATE, Operation.READ, Operation.UPDATE, Operation.DELETE)
+        else:
+            self.require_authenticated_user = require_authenticated_user
         self.only_when_child_of = only_when_child_of
         self.max_depth = max_depth
         self.limit = limit
@@ -144,7 +149,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                require_authenticated_user = self.require_authenticated_user,
+                require_authenticated_user = Operation.CREATE in self.require_authenticated_user,
             )
         # expose read methods
         if self.available_operations[Operation.READ]:
@@ -158,7 +163,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                require_authenticated_user = self.require_authenticated_user,
+                require_authenticated_user = Operation.READ in self.require_authenticated_user,
             )
             # fetch many instances
             self.schema.expose_query(
@@ -170,7 +175,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                require_authenticated_user = self.require_authenticated_user,
+                require_authenticated_user = Operation.READ in self.require_authenticated_user,
             )
         # expose UPDATE method
         if self.available_operations[Operation.UPDATE]:
@@ -190,7 +195,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                require_authenticated_user = self.require_authenticated_user,
+                require_authenticated_user = Operation.UPDATE in self.require_authenticated_user,
             )
         # expose delete method
         if self.available_operations[Operation.DELETE]:
@@ -204,7 +209,7 @@ class ModelConfig:
                 pass_graphql_path = True,
                 pass_graphql_selection = True,
                 pass_authenticated_user = True,
-                require_authenticated_user = self.require_authenticated_user,
+                require_authenticated_user = Operation.DELETE in self.require_authenticated_user,
             )
 
     # concatenate

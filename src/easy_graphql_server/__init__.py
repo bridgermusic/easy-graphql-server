@@ -8,3 +8,8 @@ from .operations import Operation
 from .exceptions import UnauthenticatedError, NotFoundError, ForbiddenError, \
     ValidationError, DuplicateError, IntegrityError
 from .exposition import ExposedModel, ExposedQuery, ExposedMutation, CustomField
+
+CREATE = Operation.CREATE
+READ = Operation.READ
+UPDATE = Operation.UPDATE
+DELETE = Operation.DELETE
