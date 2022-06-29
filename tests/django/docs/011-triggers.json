@@ -1,0 +1,47 @@
+{
+  "data": {
+    "create_person": {
+      "username": "foo.bar@example.com",
+      "updates_count": 0,
+      "creation_data": "{\"username\": \"foo.bar@example.com\", \"first_name\": \"foo\", \"last_name\": \"bar\"}"
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "me": {
+      "username": "foo.bar@example.com",
+      "updates_count": 0,
+      "creation_data": "{\"username\": \"foo.bar@example.com\", \"first_name\": \"foo\", \"last_name\": \"bar\"}"
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "update_person": {
+      "username": "foo.bar@example.com",
+      "first_name": "Foo",
+      "last_name": "bar",
+      "updates_count": 1
+    }
+  }
+}
+
+;
+
+{
+  "data": {
+    "update_person": {
+      "username": "foo.bar@example.com",
+      "first_name": "Foo",
+      "last_name": "Bar",
+      "updates_count": 2
+    }
+  }
+}

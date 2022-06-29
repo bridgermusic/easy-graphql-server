@@ -13,12 +13,12 @@ mutation {
 
 ;
 
-# this should return nothing, as the previous mutation failed
+# this should return only return admin@example.com, as the previous mutation failed
 
+# USER: admin@example.com
 query {
   people {
-    first_name,
-    last_name
+    username
   }
 }
 
@@ -53,6 +53,20 @@ query {
 
 ;
 
+# check if identifiers are ok
+# USER: admin@example.com
+query {
+  people {
+    id
+    username
+    daily_occupations {
+      id, occupation, hours_per_day
+    }
+  }
+}
+
+;
+
 # this is bad: cannot directly create occupation
 mutation {
   create_daily_occupation (
@@ -77,7 +91,7 @@ mutation {
 
 # USER: john.doe@example.com
 mutation {
-  update_person (id: 1, _: {
+  update_person (id: 2, _: {
     daily_occupations: [
       {id: 1, hours_per_day: 7}
       {id: 2, hours_per_day: 8}
@@ -93,7 +107,7 @@ mutation {
 
 # USER: john.doe@example.com
 mutation {
-  update_person (id: 1, _: {
+  update_person (id: 2, _: {
     daily_occupations: [
       {id: 1, hours_per_day: 8}
       {id: 2, hours_per_day: 8}
@@ -105,9 +119,24 @@ mutation {
 
 ;
 
-# this should show updated schedule
+# this should fail
+
+# USER: john.doe@example.com
 query {
   person (id: 1) {
+    daily_occupations {
+      id, occupation, hours_per_day
+    }
+  }
+}
+
+;
+
+# this should show updated schedule
+
+# USER: john.doe@example.com
+query {
+  person (id: 2) {
     daily_occupations {
       id, occupation, hours_per_day
     }

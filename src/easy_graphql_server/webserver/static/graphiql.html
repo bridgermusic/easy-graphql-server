@@ -43,7 +43,7 @@ add "&raw" to the end of the URL within a browser.
   <div id="editor"></div>
   <input type="hidden" name="csrfmiddlewaretoken" value="Dj3Ksmza71K2EHB4BRU5aFglCWGDTwta4UNJXDdSxrP7p9wFnZe1smFpUJtiXkF2">
   <script type="application/javascript">
-    window.GRAPHENE_SETTINGS = {
+    window.GRAPHQL_SETTINGS = {
       graphiqlHeaderEditorEnabled: true,
     };
   </script>
@@ -51,7 +51,7 @@ add "&raw" to the end of the URL within a browser.
     (function (
       document,
 
-      GRAPHENE_SETTINGS,
+      GRAPHQL_SETTINGS,
       GraphiQL,
       React,
       ReactDOM,
@@ -143,7 +143,7 @@ add "&raw" to the end of the URL within a browser.
       // assumes the current window location with an appropriate websocket protocol.
       var subscribeURL =
         location.origin.replace(/^http/, "ws") +
-        (GRAPHENE_SETTINGS.subscriptionPath || location.pathname);
+        (GRAPHQL_SETTINGS.subscriptionPath || location.pathname);
 
       // Create a subscription client.
       var subscriptionClient = new SubscriptionsTransportWs.SubscriptionClient(
@@ -225,7 +225,7 @@ add "&raw" to the end of the URL within a browser.
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
         onEditOperationName: onEditOperationName,
-        headerEditorEnabled: GRAPHENE_SETTINGS.graphiqlHeaderEditorEnabled,
+        headerEditorEnabled: GRAPHQL_SETTINGS.graphiqlHeaderEditorEnabled,
         query: parameters.query,
       };
       if (parameters.variables) {
@@ -242,7 +242,7 @@ add "&raw" to the end of the URL within a browser.
     })(
       document,
 
-      window.GRAPHENE_SETTINGS,
+      window.GRAPHQL_SETTINGS,
       window.GraphiQL,
       window.React,
       window.ReactDOM,

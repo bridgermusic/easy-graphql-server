@@ -1,5 +1,6 @@
 # TODO
 
+- write tests for `has_permission` on `CREATE`, `UPDATE` and `DELETE`
 - limit/offset in model collection queries
 - order in model collection queries
 - add SQLAlchemy support

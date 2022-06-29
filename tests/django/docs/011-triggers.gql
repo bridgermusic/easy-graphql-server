@@ -1,0 +1,46 @@
+mutation {
+    create_person (
+        username: "foo.bar@example.com"
+        first_name: "foo"
+        last_name: "bar"
+    ) {
+        username
+        updates_count
+        creation_data
+    }
+}
+
+;
+
+# USER: foo.bar@example.com
+query {
+    me {
+        username
+        updates_count
+        creation_data
+    }
+}
+
+;
+
+# USER: foo.bar@example.com
+mutation {
+    update_person(username: "foo.bar@example.com", _: {first_name: "Foo"}) {
+        username
+        first_name
+        last_name
+        updates_count
+    }
+}
+
+;
+
+# USER: foo.bar@example.com
+mutation {
+    update_person(username: "foo.bar@example.com", _: {last_name: "Bar"}) {
+        username
+        first_name
+        last_name
+        updates_count
+    }
+}

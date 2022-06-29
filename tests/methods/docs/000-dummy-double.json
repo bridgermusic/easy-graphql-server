@@ -21,17 +21,20 @@
 ;
 
 {
-    "data": null,
-    "errors": [
+  "data": null,
+  "errors": [
+    {
+      "message": "{\"error\": \"MISSING_ARGUMENT\", \"payload\": {\"parent_type_name\": \"dummy_double\", \"expected_argument_name\": \"input_text\", \"expected_type\": \"String!\", \"path\": [\"mutation\", \"dummy_double\"]}}",
+      "locations": [
         {
-            "message": "Field 'dummy_double' argument 'input_text' of type 'String!' is required, but it was not provided.",
-            "locations": [
-                {
-                    "line": 2,
-                    "column": 3
-                }
-            ],
-            "path": null
+          "line": 2,
+          "column": 3
         }
-    ]
+      ],
+      "path": [
+        "mutation",
+        "dummy_double"
+      ]
+    }
+  ]
 }

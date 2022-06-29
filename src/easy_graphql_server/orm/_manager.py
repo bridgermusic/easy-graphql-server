@@ -6,6 +6,8 @@ from .. import graphql_types
 from ..operations import Operation
 from ._lookups import LOOKUPS
 
+import graphql.type.definition
+
 
 class ModelManager:
     """
@@ -14,13 +16,19 @@ class ModelManager:
         Cannot be used as is, this is an abstract class that must be inherited.
     """
 
-    def __init__(self, orm_model, model_config):
+    def __init__(self, orm_model, model_config, restrict_queried_fields):
         self.orm_model = orm_model
         self.model_config = model_config
-        self.fields_info = self.get_fields_info()
-        self.fields_info.compute_linked()
-        for custom_field in self.model_config.custom_fields:
-            self.fields_info.custom.add(custom_field.name)
+        self.restrict_queried_fields = restrict_queried_fields
+
+    @property
+    def fields_info(self):
+        if not hasattr(self, '_fields_info'):
+            self._fields_info = self.get_fields_info()
+            self._fields_info.compute_linked()
+            for custom_field in self.model_config.custom_fields:
+                self._fields_info.custom.add(custom_field.name)
+        return self._fields_info
 
     # metadata extraction
 
@@ -65,8 +73,15 @@ class ModelManager:
                         for int_lookup_name, int_lookup_graphql_type in int_lookups.items():
                             name = f'{prefixed_field_name}__{lookup_name}__{int_lookup_name}'
                             filters[name] = int_lookup_graphql_type
+            elif isinstance(graphql_type, graphql.type.definition.GraphQLEnumType):
+                filters[prefixed_field_name] = graphql_type
+                filters[f'{prefixed_field_name}__in'] = graphql_types.List(graphql_type)
+                filters[f'{prefixed_field_name}__isnull'] = graphql_types.Boolean
         # result
         return filters
+
+    def get_table_name(self):
+        raise NotImplementedError()
 
     # CRUD operations on ORM model instances
 
@@ -119,13 +134,21 @@ class ModelManager:
                 result[custom_field.name] = data.pop(custom_field.name)
         return result
 
-    def _create_or_update_custom_fields(self, instance, authenticated_user, data):
+    def _create_custom_fields(self, instance, authenticated_user, data):
         for custom_field in self.model_config.custom_fields:
             if custom_field.name in data:
                 custom_field.perform_one_creation(
                     instance = instance,
                     authenticated_user = authenticated_user,
-                    data = data[custom_field.name])
+                    value = data[custom_field.name])
+
+    def _update_custom_fields(self, instance, authenticated_user, data):
+        for custom_field in self.model_config.custom_fields:
+            if custom_field.name in data:
+                custom_field.perform_one_update(
+                    instance = instance,
+                    authenticated_user = authenticated_user,
+                    value = data[custom_field.name])
 
     def _read_custom_fields(self, instance, authenticated_user, graphql_selection):
         result = {}
@@ -139,8 +162,7 @@ class ModelManager:
 
     # methods should be executed within an atomic database transaction
 
-    @staticmethod
-    def decorate(method):
+    def decorate(self, method):
         """
             Decorator to execute a given method within a transaction, using
             the corresponding ORM.

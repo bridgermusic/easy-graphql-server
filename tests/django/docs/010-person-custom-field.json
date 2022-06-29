@@ -11,7 +11,7 @@
     "create_person": {
       "id": 1,
       "first_name": "Amel",
-      "birth_date": "1991-09-01"
+      "birth_date": "1991-01-01"
     }
   }
 }
@@ -23,7 +23,7 @@
     "update_person": {
       "id": 1,
       "first_name": "Amel",
-      "birth_date": "1991-01-09"
+      "birth_date": "1991-02-02"
     }
   }
 }
@@ -34,8 +34,8 @@
   "data": {
     "person": {
       "id": 1,
-      "birth_date": "1991-01-09",
-      "same_as_birth_date": "1991-01-09"
+      "birth_date": "1991-02-02",
+      "same_as_birth_date": "1991-02-02"
     }
   }
 }
@@ -47,8 +47,8 @@
     "people": [
       {
         "id": 1,
-        "birth_date": "1991-01-09",
-        "same_as_birth_date": "1991-01-09"
+        "birth_date": "1991-02-02",
+        "same_as_birth_date": "1991-02-02"
       }
     ]
   }

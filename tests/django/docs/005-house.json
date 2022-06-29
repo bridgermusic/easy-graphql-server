@@ -11,7 +11,7 @@
 {
     "data": {
         "create_person": {
-            "id": 1,
+            "id": 2,
             "houses": [
                 {
                     "id": 2
@@ -38,14 +38,14 @@
         "id": 2,
         "location": "Paris",
         "owner": {
-          "id": 1
+          "id": 2
         }
       },
       {
         "id": 3,
         "location": "Aarhus",
         "owner": {
-          "id": 1
+          "id": 2
         }
       }
     ]
@@ -61,14 +61,14 @@
         "id": 2,
         "location": "Paris",
         "owner": {
-          "id": 1
+          "id": 2
         }
       },
       {
         "id": 3,
         "location": "Aarhus",
         "owner": {
-          "id": 1
+          "id": 2
         }
       }
     ]
@@ -113,7 +113,7 @@
             "id": 1,
             "location": "over the rainbow",
             "owner": {
-                "id": 1,
+                "id": 2,
                 "first_name": "Johnny",
                 "last_name": "Doe"
             }
@@ -129,7 +129,7 @@
             "id": 1,
             "location": "over the rainbow",
             "owner": {
-                "id": 4,
+                "id": 3,
                 "first_name": "Beth",
                 "last_name": "Doe"
             }
@@ -141,27 +141,29 @@
 
 {
   "data": {
+    "people": []
+  }
+}
+
+;
+
+{
+  "data": {
     "people": [
       {
         "id": 1,
-        "first_name": "Johnny",
-        "last_name": "Doe",
-        "username": "john.doe@example.com"
-      },
-      {
-        "id": 2,
         "first_name": "",
         "last_name": "",
         "username": "superadmin@example.com"
       },
       {
-        "id": 3,
-        "first_name": "",
-        "last_name": "",
-        "username": "admin@example.com"
+        "id": 2,
+        "first_name": "Johnny",
+        "last_name": "Doe",
+        "username": "john.doe@example.com"
       },
       {
-        "id": 4,
+        "id": 3,
         "first_name": "Beth",
         "last_name": "Doe",
         "username": "beth.doe@example.com"

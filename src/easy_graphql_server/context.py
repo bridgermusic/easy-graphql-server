@@ -5,7 +5,7 @@
 
 class ContextValue:
 
-    # pylint: disable=R0903 # Too few public methods
+    # pylint: disable=too-few-public-methods
 
     """
         `ContextValue` objects are passed as `context_value` parameter to `graphql_sync()`

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm tests/django/migrations/*
+PYTHONPATH=src python django_tests_manage.py makemigrations django

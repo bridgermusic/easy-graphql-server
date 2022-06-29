@@ -1,12 +1,12 @@
 import easy_graphql_server
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True)
 
 schema.expose_mutation(
     name = 'dummy_double',
     input_format = {
-        'input_text': easy_graphql_server.Mandatory(str),
+        'input_text': easy_graphql_server.Required(str),
         'input_number': float,
     },
     output_format = {
@@ -22,7 +22,7 @@ schema.expose_mutation(
 schema.expose_query(
     name = 'dummy_retrieve',
     input_format = {
-        'input_identifier': easy_graphql_server.Mandatory(int),
+        'input_identifier': easy_graphql_server.Required(int),
     },
     output_format = {
         'output_identifier': int,
@@ -49,7 +49,7 @@ schema.expose_query(
 schema.expose_query(
     name = 'dummy_collection_output',
     input_format = {
-        'max_index': easy_graphql_server.Mandatory(int),
+        'max_index': easy_graphql_server.Required(int),
     },
     output_format = {
         'max_index': int,

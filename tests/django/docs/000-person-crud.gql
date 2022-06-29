@@ -39,6 +39,7 @@ mutation {
 
 ;
 
+# USER: admin@example.com
 query {
   person (id: 1) {
     id
@@ -49,6 +50,7 @@ query {
 
 ;
 
+# USER: michel.dupont@example.com
 query {
   people (id: 1) {
     id
@@ -59,6 +61,7 @@ query {
 
 ;
 
+# USER: michel.dupont@example.com
 mutation {
   update_person (id: 1, _: {id: 42}) {
     first_name
@@ -84,6 +87,8 @@ mutation {
 }
 
 ;
+
+# USER: admin@example.com
 
 query {
   person (id: 1) {

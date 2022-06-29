@@ -3,6 +3,7 @@
 """
 
 from django.http import HttpResponse, JsonResponse
+import django.contrib.auth
 from ._schema_view import SchemaView
 
 
@@ -20,7 +21,10 @@ class DjangoSchemaView(SchemaView):
         if request.user and request.user.is_authenticated and not request.user.is_anonymous:
             authenticated_user = request.user
         else:
-            authenticated_user = None
+            try:
+                authenticated_user = django.contrib.auth.authenticate(request)
+            except Exception as error:
+                authenticated_user = None
         # compute result
         result = self.compute_response(
             method = request.method,
