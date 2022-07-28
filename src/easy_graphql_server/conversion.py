@@ -44,7 +44,7 @@ def to_graphql_enum_key(name, capitalize=True):
 
         (only uppercase letters, underscores and digits, cannot start with a digit)
     """
-    key = re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', name)
+    key = re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', str(name))
     if capitalize:
         return key.upper()
     return key
