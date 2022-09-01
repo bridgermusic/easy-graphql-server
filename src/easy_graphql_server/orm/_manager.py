@@ -64,6 +64,8 @@ class ModelManager:
                 filters[prefixed_field_name] = graphql_type
                 # browse & add available lookups
                 for lookup_name, lookup_graphql_type in LOOKUPS.get(graphql_type, {}).items():
+                    if not self.model_config.is_lookup_allowed(lookup_name):
+                        continue
                     filters[f'{prefixed_field_name}__{lookup_name}'] = lookup_graphql_type
                     # apply same filters as for integers on date/time parts
                     date_time_types = (
@@ -71,12 +73,16 @@ class ModelManager:
                     if graphql_type in date_time_types and lookup_graphql_type == graphql_types.Int:
                         int_lookups = LOOKUPS[graphql_types.Int]
                         for int_lookup_name, int_lookup_graphql_type in int_lookups.items():
+                            if not self.model_config.is_lookup_allowed(int_lookup_name):
+                                continue
                             name = f'{prefixed_field_name}__{lookup_name}__{int_lookup_name}'
                             filters[name] = int_lookup_graphql_type
             elif isinstance(graphql_type, graphql.type.definition.GraphQLEnumType):
                 filters[prefixed_field_name] = graphql_type
-                filters[f'{prefixed_field_name}__in'] = graphql_types.List(graphql_type)
-                filters[f'{prefixed_field_name}__isnull'] = graphql_types.Boolean
+                if self.model_config.is_lookup_allowed('in'):
+                    filters[f'{prefixed_field_name}__in'] = graphql_types.List(graphql_type)
+                if self.model_config.is_lookup_allowed('isnull'):
+                    filters[f'{prefixed_field_name}__isnull'] = graphql_types.Boolean
         # result
         return filters
 

@@ -31,6 +31,7 @@ class ModelConfig:
             only_when_child_of=None, require_authenticated_user=False, restrict_queried_fields=False,
             has_permission=None, filter_for_user=None,
             on_before_operation=None, on_after_operation=None,
+            allowed_lookups=None, disallowed_lookups=None,
             custom_fields=None, max_depth=None, limit=-1):
         # pylint: disable=unused-argument # for callbacks
 
@@ -114,6 +115,9 @@ class ModelConfig:
         self.name = name or schema.case_manager.convert(self.orm_model_manager.get_table_name())
         self.types_name = types_name or self.name
         self.plural_name = plural_name or f'{self.name}s'
+        # lookups
+        self.allowed_lookups = allowed_lookups
+        self.disallowed_lookups = disallowed_lookups or ()
 
     def expose_methods(self):
         """
@@ -407,6 +411,13 @@ class ModelConfig:
                 authenticated_user = authenticated_user,
                 path = graphql_path,
             )
+
+    # lookups
+
+    def is_lookup_allowed(self, name):
+        if self.allowed_lookups is None or name in self.allowed_lookups:
+            return name not in self.disallowed_lookups
+        return False
 
     # triggers
 
