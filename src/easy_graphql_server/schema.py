@@ -3,8 +3,11 @@
     a central point to the easy_graphql_server API.
 """
 
+import re
+import json
 import inspect
 from collections import defaultdict
+import logging
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
 from graphql.type.validate import validate_schema # pylint: disable=no-name-in-module,import-error
@@ -35,6 +38,8 @@ class Schema:
 
         Schema can be validated using `Schema.check()`.
     """
+
+    _requests_logger = logging.getLogger('easy_graphql_server.requests')
 
     # public methods
 
@@ -130,6 +135,21 @@ class Schema:
         """
             Execute a GraphQL query within the schema.
         """
+        # debug logging
+        self._requests_logger.debug(json.dumps({
+            'authenticated_user': authenticated_user.username if authenticated_user is not None else None,
+            'query': query,
+            'operation_name': operation_name,
+            'variables': variables,
+        }))
+        # info logging
+        simpler_query = re.sub(r'#[^\n]+', '', query)
+        simpler_query = re.sub(r'\s+', ' ', simpler_query).strip()
+        self._requests_logger.info(json.dumps({
+            'authenticated_user': authenticated_user.username if authenticated_user is not None else None,
+            'query': simpler_query[:64] + '...' if len(simpler_query) > 64 else '',
+        }))
+        # actual query execution
         result = graphql_sync(
             schema = self._get_graphql_schema(),
             source = query,
@@ -139,6 +159,7 @@ class Schema:
                 authenticated_user = authenticated_user,
             ),
         )
+        # must the output be serializable?
         if serializable_output:
             formatted_result = result.formatted
             if 'errors' in formatted_result and not formatted_result['errors']:
