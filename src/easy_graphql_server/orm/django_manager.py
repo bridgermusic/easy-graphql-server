@@ -463,7 +463,7 @@ class DjangoModelManager(ModelManager):
                     depth = depth + 1,
                 )
         # post-read trigger
-        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ, None, depth)
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ, result, depth)
         return result
 
     def build_queryset(self, graphql_selection, authenticated_user):
