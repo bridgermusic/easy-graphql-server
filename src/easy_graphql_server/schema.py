@@ -369,9 +369,11 @@ class Schema:
                 self._processing_logger.warning(error.args[0])
                 raise
             except Exception as error:
-                formatted_error = exceptions.InternalError(error if self.debug else None)
+                formatted_error = exceptions.InternalError(error)
                 self._processing_logger.warning(formatted_error.args[0])
-                raise formatted_error
+                if self.debug:
+                    raise formatted_error
+                raise exceptions.InternalError()
         return callback
 
     # using GraphQL core AST tree to return the GraphQL selection
