@@ -40,6 +40,7 @@ class Schema:
     """
 
     _requests_logger = logging.getLogger('easy_graphql_server.requests')
+    _processing_logger = logging.getLogger('easy_graphql_server.processing')
 
     # public methods
 
@@ -364,10 +365,13 @@ class Schema:
                     kwargs[pass_graphql_path] = [type_, info.path.key]
                 # executed method
                 return method(**kwargs)
-            except exceptions.BaseError:
+            except exceptions.BaseError as error:
+                self._processing_logger.warning(error.args[0])
                 raise
             except Exception as error:
-                raise exceptions.InternalError(error if self.debug else None)
+                formatted_error = exceptions.InternalError(error if self.debug else None)
+                self._processing_logger.warning(formatted_error.args[0])
+                raise formatted_error
         return callback
 
     # using GraphQL core AST tree to return the GraphQL selection
