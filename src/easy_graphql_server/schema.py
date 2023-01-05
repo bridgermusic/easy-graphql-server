@@ -190,7 +190,7 @@ class Schema:
                 return model_config
         return None
 
-    def as_django_view(self, with_graphiql=True):
+    def as_django_view(self, with_graphiql=True, compute_user=True):
         """
             Expose schema as a Django view.
 
@@ -209,7 +209,11 @@ class Schema:
         """
         # pylint: disable=import-outside-toplevel
         from .webserver.django_schema_view import DjangoSchemaView
-        return DjangoSchemaView(schema=self, with_graphiql=with_graphiql).view
+        return DjangoSchemaView(
+            schema = self,
+            with_graphiql = with_graphiql,
+            compute_user = compute_user
+        ).view
 
     def as_flask_view(self):
         """
