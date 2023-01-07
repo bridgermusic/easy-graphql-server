@@ -8,6 +8,7 @@ import re
 import enum
 import datetime
 import decimal
+import threading
 
 from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=
 from graphql import \
@@ -36,6 +37,7 @@ PYTHON_GRAPHQL_TYPES_MAPPING = {
 
 
 _enums_cache = {}
+_enums_cache_lock = threading.Lock()
 
 
 def to_graphql_enum_key(name, capitalize=True):
@@ -56,13 +58,14 @@ def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=T
 
         Choices must presented as a list of key-value pairs.
     """
-    if prefix in _enums_cache:
-        graphql_type = _enums_cache[prefix]
-    else:
-        graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
-            to_graphql_enum_key(key, capitalize): GraphQLEnumValue(key, value)
-            for key, value in choices
-        }, description=description)
+    with _enums_cache_lock:
+        if prefix in _enums_cache:
+            graphql_type = _enums_cache[prefix]
+        else:
+            graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
+                to_graphql_enum_key(key, capitalize): GraphQLEnumValue(key, value)
+                for key, value in choices
+            }, description=description)
     return graphql_type
 
 def to_graphql_enum_from_enum(prefix, enum):

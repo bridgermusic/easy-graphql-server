@@ -8,6 +8,7 @@ import json
 import inspect
 from collections import defaultdict
 import logging
+import threading
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
 from graphql.type.validate import validate_schema # pylint: disable=no-name-in-module,import-error
@@ -41,6 +42,7 @@ class Schema:
 
     _requests_logger = logging.getLogger('easy_graphql_server.requests')
     _processing_logger = logging.getLogger('easy_graphql_server.processing')
+    _lock = threading.Lock()
 
     # public methods
 
@@ -148,7 +150,7 @@ class Schema:
         simpler_query = re.sub(r'\s+', ' ', simpler_query).strip()
         self._requests_logger.info(json.dumps({
             'authenticated_user': authenticated_user.username if authenticated_user is not None else None,
-            'query': simpler_query[:64] + '...' if len(simpler_query) > 64 else '',
+            'query': simpler_query[:64] + '...' if len(simpler_query) > 64 else simpler_query,
         }))
         # actual query execution
         result = graphql_sync(
@@ -340,11 +342,12 @@ class Schema:
         )
 
     def _get_graphql_schema(self):
-        if self.dirty:
-            graphql_schema = self._make_graphql_schema()
-            self.check(graphql_schema)
-            self.graphql_schema = graphql_schema
-            self.dirty = False
+        with self._lock:
+            if self.dirty:
+                graphql_schema = self._make_graphql_schema()
+                self.check(graphql_schema)
+                self.graphql_schema = graphql_schema
+                self.dirty = False
         return self.graphql_schema
 
     # build wrapper around passed methods to build a callback
