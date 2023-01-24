@@ -24,14 +24,14 @@ class BaseError(Exception):
         Exception.__init__(self, self.message)
 
     def format_for_logs(self):
-        if isinstance(self.payload, list) and isinstance(self, ValidationError):
+        if isinstance(self.payload, list):
             return custom_json.dumps({
                 'type': self.type_,
-                'data': {'issues': self.payload},
+                'data': self.payload,
             })
         return custom_json.dumps({
             'type': self.type_,
-            'data': self.payload,
+            'data': [self.payload],
         })
 
 
