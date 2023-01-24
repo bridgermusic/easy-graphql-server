@@ -72,7 +72,7 @@ def to_graphql_enum_from_enum(prefix, enum):
     """
         Create a `GraphQLEnumType` from a subclass of native Python Enum.
     """
-    pass
+    raise NotImplementedError()
 
 def to_graphql_type(type_, prefix, for_input=False, schema=None):
     """
