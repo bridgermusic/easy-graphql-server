@@ -151,11 +151,11 @@ Time = graphql.type.GraphQLScalarType(
 
 # JSON type
 
-def serialize_jsonstring(output_value: datetime.time) -> str:
+def serialize_jsonstring(output_value):
     """ Serializes an internal value to include in a response. """
     return json.dumps(output_value)
 
-def parse_jsonstring_value(input_value: Any) -> datetime.time:
+def parse_jsonstring_value(input_value):
     """ Parses an externally provided value to use as an input. """
     try:
         return json.loads(input_value)
@@ -163,7 +163,7 @@ def parse_jsonstring_value(input_value: Any) -> datetime.time:
         raise ValueError(
             f'Cannot parse JSONString from: {repr(input_value)}, got: {error}') from error
 
-def parse_jsonstring_literal(value_node: ValueNode, _variables: Any = None) -> datetime.time:
+def parse_jsonstring_literal(value_node, _variables = None):
     """ Parses an externally provided AST value to use as an input. """
     if not isinstance(value_node, StringValueNode):
         raise ValueError(
