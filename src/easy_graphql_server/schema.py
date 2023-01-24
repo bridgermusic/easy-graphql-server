@@ -373,13 +373,13 @@ class Schema:
                 # executed method
                 return method(**kwargs)
             except exceptions.BaseError as error:
-                self._processing_logger.warning(error.args[0])
+                self._processing_logger.warning(error.format_for_logs())
                 raise
             except Exception as error:
                 formatted_error = exceptions.InternalError(error)
-                self._processing_logger.warning(formatted_error.args[0])
+                self._processing_logger.error(formatted_error.format_for_logs())
                 if self.debug:
-                    raise formatted_error
+                    raise formatted_error from error
                 raise exceptions.InternalError()
         return callback
 

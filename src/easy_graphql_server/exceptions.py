@@ -15,11 +15,24 @@ class BaseError(Exception):
         Base exception for `easy_graphql_server`
     """
     def __init__(self, type_, payload):
-        message = custom_json.dumps({
-            'type': type_,
-            'payload': payload,
+        self.type_ = type_
+        self.payload = payload
+        self.message = custom_json.dumps({
+            'type': self.type_,
+            'payload': self.payload,
         })
-        Exception.__init__(self, message)
+        Exception.__init__(self, self.message)
+
+    def format_for_logs(self):
+        if isinstance(self.payload, list) and isinstance(self, ValidationError):
+            return custom_json.dumps({
+                'type': self.type_,
+                'data': {'issues': self.payload},
+            })
+        return custom_json.dumps({
+            'type': self.type_,
+            'data': self.payload,
+        })
 
 
 _graphqlerror__init__ = GraphQLError.__init__
