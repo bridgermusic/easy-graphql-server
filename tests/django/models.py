@@ -1,29 +1,31 @@
-import sqlite3
 import datetime
+import sqlite3
 
-from django.db import models
-from django.db.models import Q
 import django.contrib.auth.models
 import django.core.exceptions
 from django.conf import settings
-
+from django.db import models
+from django.db.models import Q
 from faker import Faker
 
 from easy_graphql_server import Operation
 from easy_graphql_server.custom_json import JSONEncoder
 
+GENDER_CHOICES = ("female", "male", "other")
 
-GENDER_CHOICES = ('female', 'male', 'other')
 
 class Person(django.contrib.auth.models.AbstractBaseUser):
     class Meta:
-        ordering = ('id',)
-        db_table = 'auth_user'
+        ordering = ("id",)
+        db_table = "auth_user"
+
     id = models.AutoField(primary_key=True)
     gender = models.CharField(
-        choices=[(k,k) for k in GENDER_CHOICES],
+        choices=[(k, k) for k in GENDER_CHOICES],
         max_length=max(len(k) for k in GENDER_CHOICES),
-        blank=True, default='other')
+        blank=True,
+        default="other",
+    )
     username = models.CharField(max_length=255, unique=True)
     password = models.CharField(max_length=255, blank=True)
     first_name = models.CharField(max_length=32)
@@ -32,15 +34,16 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
     is_staff = models.BooleanField(blank=True, default=False)
     is_superuser = models.BooleanField(blank=True, default=False)
     home = models.ForeignKey(
-        to='House',
+        to="House",
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        related_name='tenants')
+        related_name="tenants",
+    )
     updates_count = models.IntegerField(blank=True, default=0)
     creation_data = models.JSONField(blank=True, null=True, encoder=JSONEncoder)
 
-    USERNAME_FIELD = 'username'
+    USERNAME_FIELD = "username"
     objects = django.contrib.auth.models.UserManager()
 
     def on_before_operation(self, authenticated_user, operation, data=None):
@@ -56,18 +59,29 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
             for daily_occupation in daily_occupations:
                 hours_sum += daily_occupation.hours_per_day
             if hours_sum != 24:
-                raise django.core.exceptions.ValidationError({'daily_occupations': [
-                    django.core.exceptions.ValidationError(
-                        message = f'the sum of `hours_per_day` for all items should amount to 24, not {hours_sum}',
-                        code = 'hours_sum',
-                        params = {'expected_hours_sum': 24, 'computed_hours_sum': hours_sum}
-                    )
-                ]})
+                raise django.core.exceptions.ValidationError(
+                    {
+                        "daily_occupations": [
+                            django.core.exceptions.ValidationError(
+                                message=f"the sum of `hours_per_day` for all items should amount to 24, not {hours_sum}",
+                                code="hours_sum",
+                                params={
+                                    "expected_hours_sum": 24,
+                                    "computed_hours_sum": hours_sum,
+                                },
+                            )
+                        ]
+                    }
+                )
 
     def has_permission(self, authenticated_user, operation, data):
         # unauthenticated requests can only create or read people
         if authenticated_user is None:
-            return operation == Operation.CREATE and not self.is_staff and not self.is_superuser
+            return (
+                operation == Operation.CREATE
+                and not self.is_staff
+                and not self.is_superuser
+            )
         # superusers can do anything
         if authenticated_user.is_superuser:
             return True
@@ -78,12 +92,13 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
         return self.username
 
     def __repr__(self):
-        return f'<Person first_name={repr(self.first_name)} last_name={repr(self.last_name)} birth_date={self.birth_date}>'
+        return f"<Person first_name={repr(self.first_name)} last_name={repr(self.last_name)} birth_date={self.birth_date}>"
 
 
 class House(models.Model):
     class Meta:
-        ordering = ('id',)
+        ordering = ("id",)
+
     id = models.AutoField(primary_key=True)
     location = models.CharField(max_length=255)
     construction_date = models.DateField(blank=True, null=True)
@@ -92,7 +107,9 @@ class House(models.Model):
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
-        related_name='houses')
+        related_name="houses",
+    )
+
     @staticmethod
     def filter_for_user(queryset, authenticated_user):
         if not authenticated_user:
@@ -100,29 +117,32 @@ class House(models.Model):
         if authenticated_user.is_superuser:
             return queryset
         return queryset.filter(
-            Q(tenants__id = authenticated_user.id) | Q(owner_id = authenticated_user.id)
+            Q(tenants__id=authenticated_user.id) | Q(owner_id=authenticated_user.id)
         )
 
 
-OCCUPATION_CHOICES = ('EAT', 'SLEEP', 'WORK', 'COMMUTE', '_')
+OCCUPATION_CHOICES = ("EAT", "SLEEP", "WORK", "COMMUTE", "_")
+
 
 class DailyOccupation(models.Model):
     class Meta:
-        ordering = ('id',)
+        ordering = ("id",)
+
     id = models.AutoField(primary_key=True)
     hours_per_day = models.IntegerField()
     occupation = models.CharField(
-        choices=[(k,k) for k in OCCUPATION_CHOICES],
-        max_length=max(len(k) for k in OCCUPATION_CHOICES))
+        choices=[(k, k) for k in OCCUPATION_CHOICES],
+        max_length=max(len(k) for k in OCCUPATION_CHOICES),
+    )
     person = models.ForeignKey(
-        to=Person,
-        on_delete=models.CASCADE,
-        related_name='daily_occupations')
+        to=Person, on_delete=models.CASCADE, related_name="daily_occupations"
+    )
 
 
 class BankAccount(models.Model):
     class Meta:
-        ordering = ('id',)
+        ordering = ("id",)
+
     id = models.AutoField(primary_key=True)
     iban = models.CharField(max_length=34)
     owner = models.ForeignKey(
@@ -130,7 +150,8 @@ class BankAccount(models.Model):
         null=False,
         blank=False,
         on_delete=models.CASCADE,
-        related_name='bank_accounts')
+        related_name="bank_accounts",
+    )
 
     def has_permission(self, authenticated_user, operation, data):
         if authenticated_user.is_superuser:
@@ -143,12 +164,19 @@ class BankAccount(models.Model):
             return queryset.none()
         if authenticated_user.is_superuser:
             return queryset
-        return queryset.filter(owner_id = authenticated_user.id)
+        return queryset.filter(owner_id=authenticated_user.id)
 
 
 template_database = None
-def populate_database(random_seed=1985, houses_count=123, people_count=456, max_houses_count_per_person=5, bank_accounts_count=789):
 
+
+def populate_database(
+    random_seed=1985,
+    houses_count=123,
+    people_count=456,
+    max_houses_count_per_person=5,
+    bank_accounts_count=789,
+):
     # try to restore from template database
     global template_database
     if template_database is not None:
@@ -160,15 +188,19 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
             PRAGMA writable_schema = 0;
             PRAGMA INTEGRITY_CHECK;
         """
-        for statement in sql.split(';'):
+        for statement in sql.split(";"):
             django_database.execute(statement)
         # restore database to previous state, and exit function
         template_database.backup(django_database)
         return
 
     # ensure database is empty
-    if Person.objects.count() or House.objects.count() or DailyOccupation.objects.count():
-        raise Exception('`populate_database()` should be called on an empty database')
+    if (
+        Person.objects.count()
+        or House.objects.count()
+        or DailyOccupation.objects.count()
+    ):
+        raise Exception("`populate_database()` should be called on an empty database")
 
     # initialize generator
     fake = Faker()
@@ -178,8 +210,8 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
     for i in range(houses_count):
         location, construction_date = fake.city(), fake.date_of_birth()
         house = House(
-            location = location,
-            construction_date = construction_date,
+            location=location,
+            construction_date=construction_date,
         )
         house.save()
     houses = list(House.objects.all())
@@ -189,18 +221,18 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
         first_name = fake.first_name()
         last_name = fake.last_name()
         birth_date = fake.date_of_birth() if fake.random_int(0, 2) <= 1 else None
-        email = f'{first_name}.{last_name}@example.com'.lower()
+        email = f"{first_name}.{last_name}@example.com".lower()
         # ensure email unicity
         index = 0
-        while Person.objects.filter(username = email).exists():
+        while Person.objects.filter(username=email).exists():
             index += 1
-            email = email.replace('@', f'{index}@')
+            email = email.replace("@", f"{index}@")
         # initialize person
         person = Person(
-            username = email,
-            first_name = first_name,
-            last_name = last_name,
-            birth_date = birth_date,
+            username=email,
+            first_name=first_name,
+            last_name=last_name,
+            birth_date=birth_date,
         )
         person.set_password(settings.DEFAULT_USER_PASSWORD)
         person.save()
@@ -219,34 +251,34 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
     people = list(Person.objects.all())
     for i in range(bank_accounts_count):
         bank_account = BankAccount(
-            iban = fake.iban(),
-            owner = people[fake.random_int(0, people_count - 1)],
+            iban=fake.iban(),
+            owner=people[fake.random_int(0, people_count - 1)],
         )
         bank_account.save()
 
     # populate occupations
     for person in people:
         sum = 0
-        OCCUPATION_CHOICES = ('EAT', 'SLEEP', 'WORK', 'COMMUTE')
+        OCCUPATION_CHOICES = ("EAT", "SLEEP", "WORK", "COMMUTE")
         for occupation in OCCUPATION_CHOICES:
             if sum == 24:
                 break
             hours_per_day = fake.random_int(0, 24 - sum)
             DailyOccupation(
-                hours_per_day = hours_per_day,
-                occupation = occupation,
-                person = person,
+                hours_per_day=hours_per_day,
+                occupation=occupation,
+                person=person,
             ).save()
             sum += hours_per_day
         if sum < 24:
             DailyOccupation(
-                hours_per_day = 24 - sum,
-                occupation = occupation,
-                person = person,
+                hours_per_day=24 - sum,
+                occupation=occupation,
+                person=person,
             ).save()
 
     # save to template database
     if template_database is None:
-        template_database = sqlite3.connect(':memory:')
+        template_database = sqlite3.connect(":memory:")
         django_database = django.db.connections.all()[0].connection
         django_database.backup(template_database)

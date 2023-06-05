@@ -1,0 +1,42 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: trailing-whitespace
+        name: Trailing whitespace
+        entry: trailing-whitespace-fixer
+        language: python
+        types: [python,file]
+        files: \.(py|md|rst)$
+
+    -   id: end-of-file-fixer
+        name: End of file fixer
+        entry: end-of-file-fixer
+        language: python
+        types: [python,file]
+        files: \.(py|md|rst)$
+
+    -   id: Check yaml
+        name: Yaml checker
+        entry: check-yaml
+        language: python
+        types: [file]
+        files: \.(yml|yaml)$
+
+    -   id: Check toml
+        name: Toml checker
+        entry: check-toml
+        language: python
+        types: [file]
+        files: \.toml$
+
+    -   id: Py-fmt-lint
+        name: fmt-lint
+        entry: make fmt-lint
+        language: system
+        types: [python]
+
+    -   id: Py-type-checking
+        name: Py-type-checking
+        entry: make type-checking
+        language: system
+        types: [python]

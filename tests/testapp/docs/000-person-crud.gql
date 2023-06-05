@@ -1,0 +1,130 @@
+mutation {
+  create_person (
+    first_name: "Michel"
+    last_name: "Thisfakenameiswaaaytoolongandshoulddefinitelyberejectedbecauseofit"
+    username: "michel.dupont@example.com"
+  ) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  create_person (
+    first_name: "Michel"
+    last_name: "Dupont"
+  ) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  create_person (
+    first_name: "Michel"
+    last_name: "Dupont"
+    username: "michel.dupont@example.com"
+  ) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  people (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+mutation {
+  update_person (id: 1, _: {id: 42}) {
+    first_name
+  }
+}
+
+;
+
+# 08
+mutation {
+  update_person (id: 1, _: {first_name: "Jean-Michel"}) {
+    first_name
+  }
+}
+
+;
+
+# 09
+# USER: michel.dupont@example.com
+mutation {
+  update_person (id: 1, _: {first_name: "Jean-Michel"}) {
+    first_name
+  }
+}
+
+;
+
+# 10
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+# 11
+mutation {
+  delete_person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+# USER: michel.dupont@example.com
+
+# 12 - Delete no existing user
+mutation {
+  delete_person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}
+
+;
+
+query {
+  person (id: 1) {
+    id
+    first_name
+    last_name
+  }
+}

@@ -1,0 +1,26 @@
+query {
+  people (first_name__startswith: "A", birth_date__year__gt: 1985) {
+    first_name
+    birth_date
+  }
+}
+
+;
+
+query {
+  houses (
+    construction_date__year__lt: 2000
+    construction_date__year__gte: 1980
+    owner__birth_date__month__gte: 9
+    tenants__first_name__icontains: "c"
+  ) {
+    owner {
+      first_name
+      birth_date
+    }
+    construction_date
+    tenants {
+      first_name
+    }
+  }
+}

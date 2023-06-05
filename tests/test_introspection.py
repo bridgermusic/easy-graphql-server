@@ -1,11 +1,9 @@
-import inspect
-import unittest
+import pytest
 
 from easy_graphql_server import introspection
 
 
-class IntrospectionTest(unittest.TestCase):
-
+class IntrospectionTestClass:
     @staticmethod
     def method1(a, b, c=1, **kwargs):
         pass
@@ -14,41 +12,91 @@ class IntrospectionTest(unittest.TestCase):
     def method2(a, b, c=1, **kwargs):
         pass
 
-    def method3(a, b, c=1, **kwargs):
+    def method3(self, a, b, c=1, **kwargs):
         pass
 
-    class Klass:
-        a = 4
-        b = 12
-        def __init__(self, a, b, c=1):
-            pass
-        def c(self, *args, **kwargs):
-            pass
 
-    class A(Klass):
-        pass
-    class B(Klass):
-        pass
-    class C(B):
+class Klass:
+    a = 4
+    b = 12
+
+    def __init__(self, a, b, c=1):
         pass
 
-    def test_get_subclasses(self):
-        subclasses = set(introspection.get_subclasses(self.Klass))
-        self.assertEqual(subclasses, {self.A, self.B, self.C})
-        subclasses = set(introspection.get_subclasses(self.Klass, {self.B}))
-        self.assertEqual(subclasses, {self.A,})
+    def c(self, *args, **kwargs):
+        pass
 
-    def test_get_method_arguments(self):
-        methods = (self.method1, self.method2, self.method3)
-        for method in methods:
-            arguments = introspection.get_method_arguments(method=method)
-            self.assertEqual(arguments, {'a': True, 'b': True, 'c': False})
-            arguments = introspection.get_method_arguments(method=method, exclude=('a',))
-        arguments = introspection.get_method_arguments(method=self.Klass, exclude=('self', 'a'))
-        self.assertEqual(arguments, {'b': True, 'c': False})
 
-    def test_get_public_class_attributes(self):
-        attributes = introspection.get_public_class_attributes(self.Klass)
-        self.assertEqual(set(attributes.keys()), set('abc'))
-        self.assertEqual(attributes['a'], 4)
-        self.assertEqual(attributes['b'], 12)
+class A(Klass):
+    pass
+
+
+class B(Klass):
+    pass
+
+
+class C(B):
+    pass
+
+
+@pytest.mark.parametrize(
+    "input_class,exclude,expected_output",
+    [
+        pytest.param(Klass, None, {A, B, C}, id="with-subclassess"),
+        pytest.param(Klass, {B}, {A}, id="exclude-subclasses"),
+    ],
+)
+def test_get_subclasses(input_class, exclude, expected_output):
+    assert (
+        set(introspection.get_subclasses(input_class, exclude=exclude))
+        == expected_output
+    )
+
+
+@pytest.mark.parametrize(
+    "class_obj, method_name, exclude, expected_output",
+    [
+        pytest.param(
+            IntrospectionTestClass,
+            "method1",
+            None,
+            {"a": True, "b": True, "c": False},
+            id="introspection-args-method1",
+        ),
+        pytest.param(
+            IntrospectionTestClass,
+            "method1",
+            ("a",),
+            {"b": True, "c": False},
+            id="introspection-args-method1-exclude",
+        ),
+        pytest.param(
+            Klass,
+            None,
+            ("self", "a"),
+            {"b": True, "c": False},
+            id="introspection-on-class",
+        ),
+    ],
+)
+def test_get_method_arguments(class_obj, method_name, exclude, expected_output):
+    method = getattr(class_obj, method_name) if method_name is not None else class_obj
+    assert (
+        introspection.get_method_arguments(method=method, exclude=exclude)
+        == expected_output
+    )
+
+
+@pytest.mark.parametrize(
+    "class_obj, expected_dictionary",
+    [
+        pytest.param(
+            Klass,
+            {"a": 4, "b": 12},
+        ),
+    ],
+)
+def test_get_public_class_attributes(class_obj, expected_dictionary):
+    attributes = introspection.get_public_class_attributes(class_obj)
+    for key, value in expected_dictionary.items():
+        assert attributes[key] == value

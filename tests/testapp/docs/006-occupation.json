@@ -1,0 +1,169 @@
+{
+  "data": {
+    "create_person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"VALIDATION\", \"payload\": [{\"path\": [\"mutation\", \"create_person\", \"daily_occupations\"], \"message\": \"the sum of `hours_per_day` for all items should amount to 24, not 16\", \"params\": {\"expected_hours_sum\": 24, \"computed_hours_sum\": 16}, \"code\": \"hours_sum\"}]}",
+      "locations": [
+        {
+          "line": 3,
+          "column": 3
+        }
+      ],
+      "path": [
+        "create_person"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+  "data": {
+    "people": []
+  }
+}
+
+;
+
+{
+    "data": {
+        "create_person": {
+            "id": 1
+        }
+    }
+}
+
+;
+
+{
+    "data": {
+        "people": [
+            {
+                "daily_occupations": [
+                    {
+                        "id": 1,
+                        "occupation": "SLEEP",
+                        "hours_per_day": 7
+                    },
+                    {
+                        "id": 2,
+                        "occupation": "WORK",
+                        "hours_per_day": 9
+                    },
+                    {
+                        "id": 3,
+                        "occupation": "EAT",
+                        "hours_per_day": 3
+                    },
+                    {
+                        "id": 4,
+                        "occupation": "_",
+                        "hours_per_day": 5
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+;
+
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Cannot query field 'create_daily_occupation' on type 'Mutation'.",
+      "locations": [
+        {
+          "line": 3,
+          "column": 3
+        }
+      ],
+      "path": null
+    }
+  ]
+}
+
+;
+
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Cannot query field 'update_daily_occupation' on type 'Mutation'.",
+      "locations": [
+        {
+          "line": 3,
+          "column": 3
+        }
+      ],
+      "path": null
+    }
+  ]
+}
+
+;
+
+{
+  "data": {
+    "update_person": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"VALIDATION\", \"payload\": [{\"path\": [\"mutation\", \"update_person\", \"daily_occupations\"], \"message\": \"the sum of `hours_per_day` for all items should amount to 24, not 23\", \"params\": {\"expected_hours_sum\": 24, \"computed_hours_sum\": 23}, \"code\": \"hours_sum\"}]}",
+      "locations": [
+        {
+          "line": 5,
+          "column": 3
+        }
+      ],
+      "path": [
+        "update_person"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+    "data": {
+        "update_person": {
+            "id": 1
+        }
+    }
+}
+
+;
+
+{
+    "data": {
+        "person": {
+            "daily_occupations": [
+                {
+                    "id": 1,
+                    "occupation": "SLEEP",
+                    "hours_per_day": 8
+                },
+                {
+                    "id": 2,
+                    "occupation": "WORK",
+                    "hours_per_day": 8
+                },
+                {
+                    "id": 4,
+                    "occupation": "_",
+                    "hours_per_day": 5
+                },
+                {
+                    "id": 5,
+                    "occupation": "COMMUTE",
+                    "hours_per_day": 3
+                }
+            ]
+        }
+    }
+}

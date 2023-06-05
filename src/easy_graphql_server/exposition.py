@@ -3,27 +3,31 @@
 """
 
 
-class Exposed: # pylint: disable=too-few-public-methods
+class Exposed:  # pylint: disable=too-few-public-methods
     """
-        Base class for `ExposedQuery`, `ExposedMutation` and `ExposedModel`
-    """
-
-class ExposedQuery(Exposed): # pylint: disable=too-few-public-methods
-    """
-        Abstract base class for exposing a query
+    Base class for `ExposedQuery`, `ExposedMutation` and `ExposedModel`
     """
 
-class ExposedMutation(Exposed): # pylint: disable=too-few-public-methods
+
+class ExposedQuery(Exposed):  # pylint: disable=too-few-public-methods
     """
-        Abstract base class for exposing a mutation
+    Abstract base class for exposing a query
     """
 
-class ExposedModel(Exposed): # pylint: disable=too-few-public-methods
+
+class ExposedMutation(Exposed):  # pylint: disable=too-few-public-methods
     """
-        Abstract base class for exposing a model
+    Abstract base class for exposing a mutation
     """
 
-class CustomField(Exposed): # pylint: disable=too-few-public-methods
+
+class ExposedModel(Exposed):  # pylint: disable=too-few-public-methods
     """
-        Abstract base class for exposing a custom field for a model
+    Abstract base class for exposing a model
+    """
+
+
+class CustomField(Exposed):  # pylint: disable=too-few-public-methods
+    """
+    Abstract base class for exposing a custom field for a model
     """

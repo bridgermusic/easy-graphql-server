@@ -4,16 +4,15 @@ from .. import exceptions
 
 
 def reraise_from_django_validation_error(graphql_path, exception):
-
     def serialize(issue, path, field_name=None):
-        if hasattr(issue, 'error_dict'):
+        if hasattr(issue, "error_dict"):
             for field, errors in issue.error_dict.items():
                 for error in errors:
                     yield from serialize(error, path, field)
         else:
             for error in issue.error_list:
                 # extract & format params
-                params = getattr(error, 'params', None) or {}
+                params = getattr(error, "params", None) or {}
                 for key in list(params.keys()):
                     if isinstance(params[key], (str, int, float, list, dict)):
                         continue
@@ -29,10 +28,11 @@ def reraise_from_django_validation_error(graphql_path, exception):
                     message %= params
                 # yield one serialized error
                 yield {
-                    'path': path + [field_name] if field_name else path,
-                    'message': str(message),
-                    'params': getattr(error, 'params', {}),
-                    'code': getattr(error, 'code', None),
+                    "path": path + [field_name] if field_name else path,
+                    "message": str(message),
+                    "params": getattr(error, "params", {}),
+                    "code": getattr(error, "code", None),
                 }
+
     issues = list(serialize(exception, graphql_path))
     raise exceptions.ValidationError(issues) from exception
