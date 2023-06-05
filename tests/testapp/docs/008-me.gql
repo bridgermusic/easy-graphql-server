@@ -1,0 +1,18 @@
+# USER: someone@example.com
+query {
+  me {
+    id
+    username
+    is_superuser
+    is_staff
+  }
+}
+
+;
+
+# USER: someone@example.com
+query {
+  me {
+    houses, home, daily_occupations
+  }
+}

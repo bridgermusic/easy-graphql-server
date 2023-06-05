@@ -1,0 +1,115 @@
+# this should fail: sum of `hours_per_day` should be 24
+mutation {
+  create_person (
+    username: "john.doe@example.com"
+    first_name: "John"
+    last_name: "Doe"
+    birth_date: "2001-01-01"
+    daily_occupations: [
+      {occupation: SLEEP, hours_per_day: 16}
+    ]
+  ) { id }
+}
+
+;
+
+# this should return nothing, as the previous mutation failed
+
+query {
+  people {
+    first_name,
+    last_name
+  }
+}
+
+;
+
+# this is good
+mutation {
+  create_person (
+    username: "john.doe@example.com"
+    first_name: "John"
+    last_name: "Doe"
+    birth_date: "2001-01-01"
+    daily_occupations: [
+      {occupation: SLEEP, hours_per_day: 7}
+      {occupation: WORK, hours_per_day: 9}
+      {occupation: EAT, hours_per_day: 3}
+      {occupation: _, hours_per_day: 5}
+    ]
+  ) { id }
+}
+
+;
+
+# check if identifiers are ok
+query {
+  people {
+    daily_occupations {
+      id, occupation, hours_per_day
+    }
+  }
+}
+
+;
+
+# this is bad: cannot directly create occupation
+mutation {
+  create_daily_occupation (
+    occupation: EAT
+    hours_per_day: 4
+  ) { id }
+}
+
+;
+
+# this is bad: cannot directly update occupation
+mutation {
+  update_daily_occupation (id: 1, _: {
+    occupation: EAT
+    hours_per_day: 4
+  }) { id }
+}
+
+;
+
+# this should fail, as sum is not 24
+
+# USER: john.doe@example.com
+mutation {
+  update_person (id: 1, _: {
+    daily_occupations: [
+      {id: 1, hours_per_day: 7}
+      {id: 2, hours_per_day: 8}
+      {occupation: COMMUTE, hours_per_day: 3}
+      {id: 4}
+    ]
+  }) { id }
+}
+
+;
+
+# this should add one occupation, remove one, and update one
+
+# USER: john.doe@example.com
+mutation {
+  update_person (id: 1, _: {
+    daily_occupations: [
+      {id: 1, hours_per_day: 8}
+      {id: 2, hours_per_day: 8}
+      {occupation: COMMUTE, hours_per_day: 3}
+      {id: 4}
+    ]
+  }) { id }
+}
+
+;
+
+# this should show updated schedule
+query {
+  person (id: 1) {
+    daily_occupations {
+      id, occupation, hours_per_day
+    }
+  }
+}

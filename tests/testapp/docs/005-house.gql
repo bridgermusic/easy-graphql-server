@@ -1,0 +1,111 @@
+mutation {
+  create_house (
+    location: "over the rainbow"
+  ) { id }
+}
+
+;
+
+mutation {
+  create_person (
+    username: "john.doe@example.com"
+    first_name: "John"
+    last_name: "Doe"
+    birth_date: "2001-01-01"
+    houses: [
+      {location: "Paris"}
+      {location: "Aarhus"}
+    ]
+  ) {
+    id
+    houses {
+      id
+    }
+  }
+}
+
+;
+
+# USER: superadmin@example.com
+query {
+  houses (id__gte: 1) {
+    id, location, owner { id }
+  }
+}
+
+;
+
+# USER: john.doe@example.com
+query {
+  houses (id__gte: 1) {
+    id, location, owner { id }
+  }
+}
+
+;
+
+query {
+  houses (id__gte: 1) {
+    id, location, owner { id }
+  }
+}
+
+;
+
+mutation {
+  update_house (
+    id: 1
+    _: {
+      owner: {id: 1, first_name: "Johnny"}
+    }
+  ) {
+    id
+    location
+    owner {id, first_name, last_name}
+  }
+}
+
+;
+
+# USER: admin@example.com
+mutation {
+  update_house (
+    id: 1
+    _: {
+      owner: {id: 1, first_name: "Johnny"}
+    }
+  ) {
+    id
+    location
+    owner {id, first_name, last_name}
+  }
+}
+
+
+;
+
+# USER: admin@example.com
+mutation {
+  update_house (
+    id: 1
+    _: {
+      owner: {
+        username: "beth.doe@example.com"
+        first_name: "Beth",
+        last_name: "Doe"
+      }
+    }
+  ) {
+    id
+    location
+    owner {id, first_name, last_name}
+  }
+}
+
+;
+
+query {
+  people (id__gte: 1) {
+    id, first_name, last_name, username
+  }
+}

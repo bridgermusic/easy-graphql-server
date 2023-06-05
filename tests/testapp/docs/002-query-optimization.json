@@ -1,0 +1,84 @@
+{
+  "data": {
+    "person": {
+      "id": 445,
+      "first_name": "Nicole",
+      "last_name": "White",
+      "home": {
+        "location": "East Dwayneville",
+        "owner": {
+          "id": 433,
+          "last_name": "Jones"
+        }
+      },
+      "houses": [
+        {
+          "id": 39,
+          "location": "Turnerborough",
+          "tenants": [
+            {
+              "first_name": "Donald",
+              "last_name": "Thompson"
+            },
+            {
+              "first_name": "Nancy",
+              "last_name": "Vaughn"
+            }
+          ]
+        },
+        {
+          "id": 99,
+          "location": "Bellton",
+          "tenants": [
+            {
+              "first_name": "Rachel",
+              "last_name": "Hayes"
+            },
+            {
+              "first_name": "Laura",
+              "last_name": "Boyd"
+            }
+          ]
+        },
+        {
+          "id": 100,
+          "location": "Lake Carolinetown",
+          "tenants": [
+            {
+              "first_name": "Sabrina",
+              "last_name": "Patel"
+            },
+            {
+              "first_name": "Kristin",
+              "last_name": "Suarez"
+            },
+            {
+              "first_name": "Patrick",
+              "last_name": "Nguyen"
+            },
+            {
+              "first_name": "Alyssa",
+              "last_name": "Robinson"
+            },
+            {
+              "first_name": "Lisa",
+              "last_name": "Gill"
+            },
+            {
+              "first_name": "Tommy",
+              "last_name": "Clark"
+            },
+            {
+              "first_name": "Hannah",
+              "last_name": "Campbell"
+            },
+            {
+              "first_name": "Robert",
+              "last_name": "Jennings"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

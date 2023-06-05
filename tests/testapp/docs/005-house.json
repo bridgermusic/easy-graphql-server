@@ -1,0 +1,171 @@
+{
+  "data": {
+    "create_house": {
+      "id": 1
+    }
+  }
+}
+
+;
+
+{
+    "data": {
+        "create_person": {
+            "id": 1,
+            "houses": [
+                {
+                    "id": 2
+                },
+                {
+                    "id": 3
+                }
+            ]
+        }
+    }
+}
+
+;
+
+{
+  "data": {
+    "houses": [
+      {
+        "id": 1,
+        "location": "over the rainbow",
+        "owner": null
+      },
+      {
+        "id": 2,
+        "location": "Paris",
+        "owner": {
+          "id": 1
+        }
+      },
+      {
+        "id": 3,
+        "location": "Aarhus",
+        "owner": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}
+
+;
+
+{
+  "data": {
+    "houses": [
+      {
+        "id": 2,
+        "location": "Paris",
+        "owner": {
+          "id": 1
+        }
+      },
+      {
+        "id": 3,
+        "location": "Aarhus",
+        "owner": {
+          "id": 1
+        }
+      }
+    ]
+  }
+}
+
+;
+
+{
+    "data": {
+        "houses": []
+    }
+}
+
+;
+
+{
+  "data": {
+    "update_house": null
+  },
+  "errors": [
+    {
+      "message": "{\"error\": \"NOT_FOUND\", \"payload\": {\"filters\": {\"id\": 1}}}",
+      "locations": [
+        {
+          "line": 2,
+          "column": 3
+        }
+      ],
+      "path": [
+        "update_house"
+      ]
+    }
+  ]
+}
+
+;
+
+{
+    "data": {
+        "update_house": {
+            "id": 1,
+            "location": "over the rainbow",
+            "owner": {
+                "id": 1,
+                "first_name": "Johnny",
+                "last_name": "Doe"
+            }
+        }
+    }
+}
+
+;
+
+{
+    "data": {
+        "update_house": {
+            "id": 1,
+            "location": "over the rainbow",
+            "owner": {
+                "id": 4,
+                "first_name": "Beth",
+                "last_name": "Doe"
+            }
+        }
+    }
+}
+
+;
+
+{
+  "data": {
+    "people": [
+      {
+        "id": 1,
+        "first_name": "Johnny",
+        "last_name": "Doe",
+        "username": "john.doe@example.com"
+      },
+      {
+        "id": 2,
+        "first_name": "",
+        "last_name": "",
+        "username": "superadmin@example.com"
+      },
+      {
+        "id": 3,
+        "first_name": "",
+        "last_name": "",
+        "username": "admin@example.com"
+      },
+      {
+        "id": 4,
+        "first_name": "Beth",
+        "last_name": "Doe",
+        "username": "beth.doe@example.com"
+      }
+    ]
+  }
+}
