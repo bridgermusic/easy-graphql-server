@@ -4,6 +4,7 @@
 
 from .operations import Operation
 
+# pylint: disable=too-many-instance-attributes,redefined-builtin
 class ModelConfigCustomField:
     """
         Configuration of a custom field added to an exposed model.

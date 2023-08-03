@@ -6,7 +6,7 @@
 class LinkedField:
     # pylint: disable=too-few-public-methods
     """
-        Base class for `ForeignField` and `RelatedField`.
+    Base class for `ForeignField` and `RelatedField`.
     """
 
     def __init__(self, orm_model, value_field_name, field_name):
@@ -15,39 +15,44 @@ class LinkedField:
         self.value_field_name = value_field_name
 
     def __repr__(self):
-        return (f'<{self.__class__.__name__} orm_model={self.orm_model.__name__} '
-            f'field_name={self.field_name} value_field_name={self.value_field_name}>')
+        return (
+            f"<{self.__class__.__name__} orm_model={self.orm_model.__name__} "
+            f"field_name={self.field_name} value_field_name={self.value_field_name}>"
+        )
 
 
-class ForeignField(LinkedField): # pylint: disable=too-few-public-methods
+class ForeignField(LinkedField):  # pylint: disable=too-few-public-methods
     """
-        Description of a foreign key field.
+    Description of a foreign key field.
 
-        `orm_model` is the ORM model to which the foreign key is pointing.
+    `orm_model` is the ORM model to which the foreign key is pointing.
 
-        `field_name` is the field name on the ORM model that refers the foreign instance.
+    `field_name` is the field name on the ORM model that refers the foreign instance.
 
-        `value_field_name` is the actual foreign key, bearing the value of the
-        primary key on the other model.
-    """
-
-class RelatedField(LinkedField): # pylint: disable=too-few-public-methods
-    """
-        Description of a "related" field (aka., the opposite of a foreign key field).
-
-        `orm_model` is the ORM model from which the foreign key is pointing.
-
-        `field_name` is the field name on the other ORM model that refers the given instance.
-
-        `value_field_name` is the actual foreign key on the other ORM model, bearing the value
-        of the primary key on the given model.
+    `value_field_name` is the actual foreign key, bearing the value of the
+    primary key on the other model.
     """
 
 
-class FieldsInfo: # pylint: disable=too-few-public-methods
+class RelatedField(LinkedField):  # pylint: disable=too-few-public-methods
     """
-        Info about fields for a given ORM model.
+    Description of a "related" field (aka., the opposite of a foreign key field).
+
+    `orm_model` is the ORM model from which the foreign key is pointing.
+
+    `field_name` is the field name on the other ORM model that refers the given instance.
+
+    `value_field_name` is the actual foreign key on the other ORM model, bearing the value
+    of the primary key on the given model.
     """
+
+
+# pylint: disable=too-few-public-methods,too-many-instance-attributes
+class FieldsInfo:
+    """
+    Info about fields for a given ORM model.
+    """
+
     def __init__(self):
         # primary key as `str`
         self.primary = None
@@ -70,6 +75,6 @@ class FieldsInfo: # pylint: disable=too-few-public-methods
 
     def compute_linked(self):
         """
-            Merge `self.foreign` and `self.related` into `self.linked`
+        Merge `self.foreign` and `self.related` into `self.linked`
         """
         self.linked = dict(self.foreign, **self.related)

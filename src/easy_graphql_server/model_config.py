@@ -1,7 +1,7 @@
 """
     This module defines the `ModelConfig` class.
 """
-
+# pylint: disable=too-many-instance-attributes,too-many-locals,broad-exception-raised
 from collections import defaultdict
 
 from .operations import Operation
@@ -236,6 +236,7 @@ class ModelConfig:
 
     # types computation
 
+    # pylint: disable=too-many-branches
     def get_type_mapping(self, operation=None, exclude=None, depth=0, linked_field=None,
             with_custom_fields=True, max_depth=None, require_non_nullable=False):
         """
@@ -415,6 +416,7 @@ class ModelConfig:
     # lookups
 
     def is_lookup_allowed(self, name):
+        """Check if lookup allowed"""
         if self.allowed_lookups is None or name in self.allowed_lookups:
             return name not in self.disallowed_lookups
         return False
