@@ -12,6 +12,7 @@ import unittest
 DefaultBaseTestCase = unittest.TestCase
 
 
+# pylint: disable=too-many-locals,too-many-statements
 def generate_testcase(schema, graphql_path,
         base_test_class=DefaultBaseTestCase, django_environment=False):
     """
@@ -29,6 +30,7 @@ def generate_testcase(schema, graphql_path,
         @staticmethod
         def _replace_extension(path, new_extension):
             return re.sub(r'\.\w+$', f'.{new_extension}', path)
+
         def _iterate_data(self, graphql_path):
             # load GraphQL input
             with open(graphql_path, 'rt', encoding='utf-8') as graphql_file:

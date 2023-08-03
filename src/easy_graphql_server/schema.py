@@ -23,8 +23,8 @@ from .casing import Casing
 from .context import ContextValue
 
 
+# pylint: disable=too-many-instance-attributes
 class Schema:
-
     """
         Base class for easy_graphql_server API.
 

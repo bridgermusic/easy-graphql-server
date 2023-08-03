@@ -1,9 +1,11 @@
+"""Django egs error mapping"""
 import inspect
 
 from .. import exceptions
 
 
 def reraise_from_django_validation_error(graphql_path, exception):
+    """Reraise error using django validation error"""
 
     def serialize(issue, path, field_name=None):
         if hasattr(issue, 'error_dict'):
