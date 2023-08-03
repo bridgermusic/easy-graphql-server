@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True, restrict_models_queried_fields=True)
 
 class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
     name = 'same_as_birth_date'
@@ -14,20 +14,22 @@ class ExposedPersonSameAsBirthdate(easy_graphql_server.CustomField):
     def read_one(instance, authenticated_user, graphql_selection):
         return instance.birth_date
     @staticmethod
-    def create_one(instance, authenticated_user, data):
-        instance.birth_date = data
+    def create_one(instance, authenticated_user, value):
+        instance.birth_date = value
     update_one = create_one
 
 class ExposedPerson(schema.ExposedModel):
     orm_model = Person
+    name = 'person'
     plural_name = 'people'
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations', 'gender')
+        'houses', 'home', 'daily_occupations', 'gender', )
+    can_read = ('updates_count', 'creation_data', )
     custom_fields = [ExposedPersonSameAsBirthdate]
 
 class ExposedMe(schema.ExposedQuery):
     name = 'me'
-    force_authenticated_user = True
+    require_authenticated_user = True
     pass_authenticated_user = True
     output_format = easy_graphql_server.Model('person').output_format + {
         'is_superuser': bool, 'is_staff': bool}
@@ -37,6 +39,7 @@ class ExposedMe(schema.ExposedQuery):
 
 class ExposedDailyOccupation(schema.ExposedModel):
     orm_model = DailyOccupation
+    name = 'daily_occupation'
     only_when_child_of = Person
 
 class ExposedHouseTenantsOccupations(easy_graphql_server.CustomField):
@@ -60,8 +63,10 @@ class ExposedHouseTenantsOccupations(easy_graphql_server.CustomField):
 
 class ExposedHouse(schema.ExposedModel):
     orm_model = House
+    name = 'house'
     custom_fields = [ExposedHouseTenantsOccupations]
 
 class ExposedBankAccount(schema.ExposedModel):
     orm_model = BankAccount
-    force_authenticated_user = True
+    name = 'bank_account'
+    require_authenticated_user = True

@@ -31,6 +31,8 @@ class SchemaTest(unittest.TestCase):
                 return result
 
     def _check_gender_type(self, gender_type):
+        if gender_type['kind'] == 'NON_NULL':
+            gender_type = gender_type['ofType']
         self.assertEqual(gender_type['kind'], 'ENUM')
         self.assertEqual(gender_type['name'], 'person__gender__enum_type')
 
@@ -79,7 +81,7 @@ class SchemaTest(unittest.TestCase):
             for attribute in ('owner', 'tenants'):
                 method_person_output_type = self._get_from_schema(method_output_type, name=attribute)
                 method_type = method_person_output_type['type']
-                if method_type['kind'] == 'LIST':
+                while method_type['kind'] in ('LIST', 'NON_NULL'):
                     method_type = method_type['ofType']
                 self.assertEqual(method_type['kind'], 'OBJECT')
                 output_types_names.add(method_type['name'])

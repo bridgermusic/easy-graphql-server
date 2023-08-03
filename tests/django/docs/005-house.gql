@@ -1,3 +1,4 @@
+# USER: superadmin@example.com
 mutation {
   create_house (
     location: "over the rainbow"
@@ -6,6 +7,7 @@ mutation {
 
 ;
 
+# USER: superadmin@example.com
 mutation {
   create_person (
     username: "john.doe@example.com"
@@ -56,7 +58,7 @@ mutation {
   update_house (
     id: 1
     _: {
-      owner: {id: 1, first_name: "Johnny"}
+      owner: {username: "john.doe@example.com", first_name: "Johnny"}
     }
   ) {
     id
@@ -67,12 +69,12 @@ mutation {
 
 ;
 
-# USER: admin@example.com
+# USER: superadmin@example.com
 mutation {
   update_house (
     id: 1
     _: {
-      owner: {id: 1, first_name: "Johnny"}
+      owner: {id: 2, first_name: "Johnny"}
     }
   ) {
     id
@@ -84,7 +86,7 @@ mutation {
 
 ;
 
-# USER: admin@example.com
+# USER: superadmin@example.com
 mutation {
   update_house (
     id: 1
@@ -104,6 +106,15 @@ mutation {
 
 ;
 
+query {
+  people (id__gte: 1) {
+    id, first_name, last_name, username
+  }
+}
+
+;
+
+# USER: superadmin@example.com
 query {
   people (id__gte: 1) {
     id, first_name, last_name, username

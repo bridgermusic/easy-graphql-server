@@ -36,15 +36,17 @@ def generate_testcase(schema, graphql_path,
             # load JSON output
             json_path = self._replace_extension(graphql_path, 'json')
             with open(json_path, 'rt', encoding='utf-8') as json_file:
-                try:
-                    json_list = [
-                        json.loads(expected_output)
-                        for i, expected_output
-                        in enumerate(re.split(r'\n\s*;\s*\n', json_file.read()))
-                    ]
-                except json.decoder.JSONDecodeError as error:
-                    raise ValueError(f'Cannot decode JSON in `{json_path}`: '
-                        '{error}\n{expected_output}') from error
+                json_data = json_file.read()
+                json_data = re.sub(r'(^|\n)//[^\n]+', r'\1', json_data)
+                json_list = []
+                for i, expected_output in enumerate(re.split(r'\n\s*;\s*\n', json_data)):
+                    try:
+                        json_list.append(
+                            json.loads(expected_output)
+                        )
+                    except json.decoder.JSONDecodeError as error:
+                        raise ValueError(f'Cannot decode JSON in `{json_path}`[{i}]: '
+                            '{error}\n{expected_output}') from error
             # load generated SQL
             sql_path = self._replace_extension(graphql_path, 'sql')
             if os.path.isfile(sql_path):
@@ -62,7 +64,7 @@ def generate_testcase(schema, graphql_path,
                     user = None
                 elif not hasattr(self, 'get_or_create_user'):
                     raise AttributeError(
-                        'To use the `USER` directive, you must implement a `get_or_create_user() '
+                        'To use the `USER` directive, you must implement a `get_or_create_user(username) '
                         'method` on a base class for test cases, and pass this class as a '
                         '`base_test_class` parameter.')
                 else:
@@ -70,26 +72,29 @@ def generate_testcase(schema, graphql_path,
                 # yield expected data
                 yield i, (user, graphql, json_, sql.strip())
         @staticmethod
-        def show_diff(path, index, expectation, reality):
+        def show_diff(path, index, expectation, reality, input_=None):
             """
                 Show difference between expected and actual result.
             """
             print(90 * '~')
             print(f'{path} : {index}')
+            if input_:
+                print(40 * '~' + ' INPUT IS ' + 40 * '~')
+                print(input_)
             print(40 * '-' + ' EXPECTED ' + 40 * '-')
             print(expectation)
             print(40 * '+' + ' RECEIVED ' + 40 * '+')
             print(reality)
             print(90 * '~')
-        def run_test(self, *args, **kwargs): # pylint: disable=W0613 # Unused arguments 'args', 'kwargs'
+        def run_test(self, *args, **kwargs): # pylint: disable=unused-argument
             """
                 Run data-driven test
             """
             # show the difference, no matter how long
-            self.maxDiff = None # pylint: disable=C0103 # Attribute name "maxDiff" doesn't conform to snake_case
+            self.maxDiff = None # pylint: disable=invalid-name
             # so we can debug SQL queries
             if django_environment:
-                from django.conf import settings # pylint: disable=C0415 # Import outside toplevel
+                from django.conf import settings # pylint: disable=import-outside-toplevel
                 settings.DEBUG = True
             # execute setup script if present
             setup_script_path = self._replace_extension(graphql_path, 'setup.py')
@@ -120,7 +125,8 @@ def generate_testcase(schema, graphql_path,
                         path = self._replace_extension(graphql_path, 'json'),
                         index = index,
                         expectation = json.dumps(json_, indent=2),
-                        reality = json.dumps(json_result, indent=2)
+                        reality = json.dumps(json_result, indent=2),
+                        input_ = re.sub(r'(?:(?<=\n)|^)[ \t]*#(?![ \t]*USER)[^\n]*(?:\n|$)', '', graphql),
                     )
                     raise
                 # check SQL also (when provided)
@@ -187,7 +193,7 @@ def make_tests_loader(schemata, path, base_test_class=DefaultBaseTestCase):
     """
     if not isinstance(schemata, (tuple, list, set)):
         schemata = [schemata]
-    def load_tests(loader, tests, ignore): # pylint: disable=W0613 # Unused argument 'loader', 'ignore'
+    def load_tests(loader, tests, ignore): # pylint: disable=unused-argument
         path_ = os.getenv('EASY_GRAPHQL_SERVER_TESTS_PATH', path)
         for schema in schemata:
             for test in generate_testcases(schema, path_, base_test_class):

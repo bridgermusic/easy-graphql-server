@@ -14,9 +14,10 @@ except ImportError:
 import django.core.exceptions
 
 from .. import graphql_types
-from .. import convert
+from .. import conversion
 from .. import exceptions
 from ..operations import Operation
+from .django_errors import reraise_from_django_validation_error
 from ._manager import ModelManager
 from ._fields import FieldsInfo, ForeignField, RelatedField
 
@@ -29,19 +30,21 @@ class DjangoModelManager(ModelManager):
     # metadata extraction
 
     def get_fields_info(self):
-        # pylint: disable=W0212 # Access to a protected member _meta of a client class
         """
             Retrieve fields info for a given Django model.
         """
         # initialize result
         fields_info = FieldsInfo()
         # primary key
-        fields_info.primary = self.orm_model._meta.pk.name
+        fields_info.primary = self.orm_model._meta.pk.name # pylint: disable=protected-access
         # value & foreign fields_info
-        for field in self.orm_model._meta.fields:
+        for field in self.orm_model._meta.fields: # pylint: disable=protected-access
             # is it mandatory?
             if not field.blank:
                 fields_info.mandatory |= {field.name, field.attname}
+            # is it nullable?
+            if field.null:
+                fields_info.nullable |= {field.name, field.attname}
             # is it a foreign key?
             if isinstance(field, django.db.models.fields.related.ForeignKey):
                 # field to which the foreign key is referring
@@ -61,7 +64,7 @@ class DjangoModelManager(ModelManager):
             if field.unique:
                 fields_info.unique[field.attname] = fields_info.value[field.attname]
         # related fields_info
-        for related in self.orm_model._meta.related_objects:
+        for related in self.orm_model._meta.related_objects: # pylint: disable=protected-access
             fields_info.related[related.name] = RelatedField(
                 orm_model = related.related_model,
                 field_name = related.field.name,
@@ -69,9 +72,13 @@ class DjangoModelManager(ModelManager):
         # return result
         return fields_info
 
+    def get_table_name(self):
+        return self.orm_model._meta.db_table
+
     # CRUD operations on ORM model instances
 
-    def create_one(self, authenticated_user, graphql_path, graphql_selection=None, **data):
+    def create_one(self, authenticated_user, graphql_path, graphql_selection=None, ensure_permission=True,
+            depth=0, **data):
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -79,10 +86,13 @@ class DjangoModelManager(ModelManager):
                 foreign_field = self.fields_info.foreign[field_name]
                 foreign_model_config = self.model_config.schema.get_model_config(
                     orm_model = foreign_field.orm_model)
-                foreign_model_config.orm_model_manager.create_one(
+                foreign_instance = foreign_model_config.orm_model_manager.create_one(
                     authenticated_user = authenticated_user,
                     graphql_path = graphql_path + [field_name],
+                    ensure_permission = False,
+                    depth = depth + 1,
                     **data.pop(field_name))
+                data[field_name] = foreign_instance
             elif field_name in self.fields_info.related:
                 related_data[field_name] = data.pop(field_name)
         # extract data for custom fields
@@ -92,18 +102,29 @@ class DjangoModelManager(ModelManager):
         # instance itself
         instance = self.orm_model(**data)
         # custom fields definition
-        self._create_or_update_custom_fields(
+        self._create_custom_fields(
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
-        # enforce permissions & save
-        self.model_config.enforce_permissions(
-            operation = Operation.CREATE,
-            instance = instance,
-            authenticated_user = authenticated_user,
-            graphql_path = graphql_path,
-        )
-        instance.save()
+        # pre-save trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.CREATE, data, depth)
+        # enforce permissions
+        if ensure_permission:
+            self.model_config.ensure_permission(
+                operation = Operation.CREATE,
+                instance = instance,
+                authenticated_user = authenticated_user,
+                graphql_path = graphql_path,
+                data = data,
+            )
+        try:
+            # validation
+            instance.full_clean()
+            # save
+            instance.save()
+        except django.core.exceptions.ValidationError as exception:
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # related data
         for field_name, children_data in related_data.items():
             for related_index, related_data in enumerate(children_data):
@@ -113,14 +134,20 @@ class DjangoModelManager(ModelManager):
                     orm_model = related_field.orm_model)
                 related_instance = related_model_config.orm_model_manager.create_one(
                     authenticated_user = authenticated_user,
-                    graphql_path = graphql_path + [related_index, field_name],
+                    graphql_path = graphql_path + [field_name, related_index],
+                    ensure_permission = False,
+                    depth = depth + 1,
                     **related_data)
                 getattr(instance, field_name).add(related_instance)
         # validation
         try:
-            instance.full_clean()
+            if callable(getattr(instance, 'clean_related', None)):
+                instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
-            self._reraise_validation_error(graphql_path, exception)
+            reraise_from_django_validation_error(
+                graphql_path, exception)
+        # post-save trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.CREATE, data, depth)
         # result
         if graphql_selection is None:
             return instance
@@ -129,7 +156,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = False,
         )
 
     def read_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -143,24 +170,32 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
 
     def read_many(self, authenticated_user, graphql_path, graphql_selection, **filters):
+        # build queryset
+        queryset = self._read(
+            graphql_selection = graphql_selection,
+            authenticated_user = authenticated_user,
+            **filters
+        )
+        # build results, according to current limits
+        if self.model_config.limit > -1:
+            results = queryset[:self.model_config.limit]
+        else:
+            results = queryset.all()
+        # return formatted result
         return [
             self._instance_to_dict(
                 authenticated_user = authenticated_user,
                 instance = instance,
                 graphql_selection = graphql_selection,
                 graphql_path = graphql_path,
-                enforce_permissions = False,
+                ensure_permission = False,
             )
-            for instance in self._read(
-                graphql_selection = graphql_selection,
-                authenticated_user = authenticated_user,
-                **filters
-            ).all()
-            if self.model_config.check_permissions(
+            for instance in results
+            if self.model_config.has_permission(
                 operation = Operation.READ,
                 instance = instance,
                 authenticated_user = authenticated_user,
@@ -168,7 +203,7 @@ class DjangoModelManager(ModelManager):
         ]
 
     def update_one(self, authenticated_user, graphql_path, graphql_selection=None,
-            _=None, **filters):
+            _=None, depth=0, **filters):
         # variable that contains new data
         data = _ or {}
         # retrieve the instance to update
@@ -177,6 +212,16 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             **filters
         )
+        # enforce permissions
+        self.model_config.ensure_permission(
+            operation = Operation.UPDATE,
+            instance = instance,
+            authenticated_user = authenticated_user,
+            graphql_path = graphql_path,
+            data = data,
+        )
+        # pre-update trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.UPDATE, data, depth)
         # related things
         related_data = {}
         for field_name in list(data.keys()):
@@ -194,6 +239,7 @@ class DjangoModelManager(ModelManager):
                         data[field_name] = child_model_config.orm_model_manager.create_one(
                             authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
+                            depth = depth + 1,
                             **child_data)
                     # if identifier provided, update existing instance
                     else:
@@ -201,6 +247,7 @@ class DjangoModelManager(ModelManager):
                             authenticated_user = authenticated_user,
                             graphql_path = graphql_path + [field_name],
                             _ = child_data,
+                            depth = depth + 1,
                             **{child_model_config.orm_model_manager.fields_info.primary:
                                 child_identifier})
             # related fields
@@ -208,24 +255,25 @@ class DjangoModelManager(ModelManager):
                 related_data[field_name] = data.pop(field_name)
         # extract data for custom fields
         custom_fields_data = self._extract_custom_fields_data(
-            operation = Operation.CREATE,
+            operation = Operation.UPDATE,
             data = data)
         # direct attributes
         for key, value in data.items():
             setattr(instance, key, value)
         # custom fields definition
-        self._create_or_update_custom_fields(
+        self._update_custom_fields(
             instance = instance,
             authenticated_user = authenticated_user,
             data = custom_fields_data)
-        # enforce permissions & save
-        self.model_config.enforce_permissions(
-            operation = Operation.UPDATE,
-            instance = instance,
-            authenticated_user = authenticated_user,
-            graphql_path = graphql_path,
-        )
-        instance.save()
+        # validate & save (raise an easy_graphql_server exception instead of a Django one)
+        try:
+            # validation
+            instance.full_clean()
+            # save instance
+            instance.save()
+        except django.core.exceptions.ValidationError as exception:
+            reraise_from_django_validation_error(
+                graphql_path, exception)
         # related data
         for field_name, children_data in related_data.items():
             related_field = self.fields_info.related[field_name]
@@ -234,33 +282,45 @@ class DjangoModelManager(ModelManager):
             children_identifiers = []
             # create & update
             for child_index, child_data in enumerate(children_data):
-                child_identifier = child_data.pop(
+                child_identifier = child_data.get(
                     child_model_config.orm_model_manager.fields_info.primary, None)
-                # create if no identifier provided
-                if child_identifier is None:
-                    child_instance = child_model_config.orm_model_manager.create_one(
-                        authenticated_user = authenticated_user,
-                        graphql_path = graphql_path + [child_index, field_name],
-                        **dict({related_field.value_field_name: instance.pk}, **child_data))
-                # update if identifier provided
-                else:
+                # update only if identifier provided
+                if child_identifier is not None:
                     child_instance = child_model_config.orm_model_manager.update_one(
                         authenticated_user = authenticated_user,
-                        graphql_path = graphql_path + [child_index, field_name],
+                        graphql_path = graphql_path + [field_name, child_index],
                         _ = child_data,
+                        depth = depth + 1,
                         **{child_model_config.orm_model_manager.fields_info.primary:
                             child_identifier})
-                # store identifier
-                children_identifiers.append(child_instance.pk)
+                    # store identifier
+                    children_identifiers.append(child_identifier)
             # delete omitted children
             for child_instance in getattr(instance, field_name).all():
                 if child_instance.pk not in children_identifiers:
                     child_instance.delete()
+            # create
+            for child_index, child_data in enumerate(children_data):
+                child_identifier = child_data.get(
+                    child_model_config.orm_model_manager.fields_info.primary, None)
+                # create only if no identifier provided
+                if child_identifier is None:
+                    child_instance = child_model_config.orm_model_manager.create_one(
+                        authenticated_user = authenticated_user,
+                        graphql_path = graphql_path + [field_name, child_index],
+                        depth = depth + 1,
+                        **dict({related_field.value_field_name: instance.pk}, **child_data))
+                    getattr(instance, field_name).add(child_instance)
         # validation (raise an easy_graphql_server exception instead of a Django one)
         try:
             instance.full_clean()
+            if callable(getattr(instance, 'clean_related', None)):
+                instance.clean_related()
         except django.core.exceptions.ValidationError as exception:
-            self._reraise_validation_error(graphql_path, exception)
+            reraise_from_django_validation_error(
+                graphql_path, exception)
+        # post-update trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.UPDATE, data, depth)
         # result
         if graphql_selection is None:
             return instance
@@ -269,7 +329,7 @@ class DjangoModelManager(ModelManager):
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = True,
         )
 
     def delete_one(self, authenticated_user, graphql_path, graphql_selection, **filters):
@@ -278,32 +338,45 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user,
             **filters
         )
-        self.model_config.enforce_permissions(
+        self.model_config.ensure_permission(
             operation = Operation.DELETE,
             instance = instance,
             authenticated_user = authenticated_user,
             graphql_path = graphql_path,
         )
+        # keep primary key for later result
+        if self.fields_info.primary in graphql_selection:
+            pre_result = {self.fields_info.primary: getattr(instance, self.fields_info.primary)}
+        else:
+            pre_result = {}
+        # actually perform operations
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.DELETE, None, 0)
+        instance.delete()
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.DELETE, None, 0)
+        # compute & return result
         result = self._instance_to_dict(
             authenticated_user = authenticated_user,
             instance = instance,
             graphql_selection = graphql_selection,
             graphql_path = graphql_path,
-            enforce_permissions = True,
+            ensure_permission = False,
         )
-        instance.delete()
+        result.update(pre_result)
         return result
 
     # methods should be executed within an atomic database transaction
 
-    @staticmethod
-    def decorate(method):
+    def decorate(self, method, graphql_path=None):
         """
             Every exposed method will have to go through this decorator.
         """
         def decorated(*args, **kwargs):
             with django.db.transaction.atomic():
-                return method(*args, **kwargs)
+                try:
+                    return method(*args, **kwargs)
+                except django.core.exceptions.ValidationError as exception:
+                    reraise_from_django_validation_error(
+                        graphql_path or kwargs['graphql_path'], exception)
         return decorated
 
     # helpers for reading
@@ -315,7 +388,7 @@ class DjangoModelManager(ModelManager):
             authenticated_user = authenticated_user
         ).filter(**filters)
         # filter queryset, depending on model config
-        queryset = self.model_config.filter(
+        queryset = self.model_config.filter_for_user(
             queryset = queryset,
             authenticated_user = authenticated_user)
         # return resulting queryset
@@ -332,11 +405,12 @@ class DjangoModelManager(ModelManager):
             raise exceptions.NotFoundError(filters) from error
 
     def _instance_to_dict(self, instance, authenticated_user, graphql_selection, graphql_path,
-            enforce_permissions=True):
-            # pylint: disable=R0913 # Too many arguments
+            ensure_permission=True, depth=0):
+        # pre-read trigger
+        self.model_config.on_before_operation(instance, authenticated_user, Operation.READ, None, depth)
         # enforce permissions when requested
-        if enforce_permissions:
-            self.model_config.enforce_permissions(
+        if ensure_permission:
+            self.model_config.ensure_permission(
                 operation = Operation.READ,
                 instance = instance,
                 authenticated_user = authenticated_user,
@@ -357,26 +431,39 @@ class DjangoModelManager(ModelManager):
                 result[field_name] = field_value
             # related field
             elif type(field_value).__name__ == 'RelatedManager':
-                result[field_name] = [
-                    self._instance_to_dict(
-                        authenticated_user = authenticated_user,
-                        instance = child_instance,
-                        graphql_selection = graphql_subselection,
-                        graphql_path = graphql_path + [field_name, child_index],
-                        enforce_permissions = False,
-                    )
-                    for child_index, child_instance
-                    in enumerate(field_value.all())
-                ]
+                children_instances = field_value.all()
+                if len(children_instances) == 0:
+                    result[field_name] = []
+                else:
+                    model_manager = self.model_config.schema.get_model_config(
+                        orm_model=children_instances[0].__class__).orm_model_manager
+                    result[field_name] = [
+                        model_manager._instance_to_dict(
+                            authenticated_user = authenticated_user,
+                            instance = child_instance,
+                            graphql_selection = graphql_subselection,
+                            graphql_path = graphql_path + [field_name, child_index],
+                            ensure_permission = False,
+                            depth = depth + 1,
+                        )
+                        for child_index, child_instance
+                        in enumerate(children_instances)
+                    ]
             # foreign field
             elif field_value is not None:
-                result[field_name] = self._instance_to_dict(
+                model_manager = self.model_config.schema.get_model_config(
+                    orm_model=field_value.__class__).orm_model_manager
+                # pylint: disable=protected-access
+                result[field_name] = model_manager._instance_to_dict(
                     authenticated_user = authenticated_user,
                     instance = field_value,
                     graphql_selection = graphql_subselection,
                     graphql_path = graphql_path + [field_name],
-                    enforce_permissions = True,
+                    ensure_permission = ensure_permission,
+                    depth = depth + 1,
                 )
+        # post-read trigger
+        self.model_config.on_after_operation(instance, authenticated_user, Operation.READ, result, depth)
         return result
 
     def build_queryset(self, graphql_selection, authenticated_user):
@@ -389,18 +476,20 @@ class DjangoModelManager(ModelManager):
                 authenticated_user = authenticated_user,
             )
         )
-        if hasattr(self.orm_model, 'filter_permitted'):
-            base_queryset = self.orm_model.filter_permitted(authenticated_user)
-        else:
-            base_queryset = self.orm_model.objects
+        base_queryset = self.model_config.filter_for_user(self.orm_model.objects, authenticated_user)
+        if self.restrict_queried_fields:
+            return (base_queryset
+                .only(*only)
+                .prefetch_related(*prefetch_related)
+                .select_related(*select_related)
+            )
         return (base_queryset
-            .only(*only)
             .prefetch_related(*prefetch_related)
             .select_related(*select_related)
         )
 
     def build_queryset_parts(self, graphql_selection, authenticated_user,
-            field_prefix=''): # pylint: disable=R0914 # Too many local variables
+            field_prefix=''):
         """
             Build queryset parts for given GraphQL selection
 
@@ -427,7 +516,6 @@ class DjangoModelManager(ModelManager):
                 select_related.append(field_prefix + field_name)
                 foreign_orm_model_manager = schema.get_model_config(
                     orm_model = foreign_field.orm_model).orm_model_manager
-                # pylint: disable=W0612 # Unused variable '_'
                 foreign_only, foreign_prefetch_related, foreign_select_related = (
                     foreign_orm_model_manager.build_queryset_parts(
                         graphql_selection = graphql_subselection,
@@ -445,41 +533,17 @@ class DjangoModelManager(ModelManager):
                     orm_model = related_field.orm_model)
                 prefetch_related.append(
                     django.db.models.Prefetch(
-                        field_name,
+                        f'{field_prefix}{field_name}',
                         queryset = related_model_config.orm_model_manager.build_queryset(
-                            graphql_selection = dict({related_field.value_field_name: None},
-                                **graphql_subselection),
                             authenticated_user = authenticated_user,
+                            graphql_selection = dict(
+                                {related_field.value_field_name: None},
+                                **graphql_subselection),
                         )
                     )
                 )
         # return resulting queryset
         return only, prefetch_related, select_related
-
-    # validation error
-
-    @staticmethod
-    def _reraise_validation_error(graphql_path, exception):
-
-        def serialize(issue, path, field_name=None):
-            if hasattr(issue, 'error_dict'):
-                for field, errors in issue.error_dict.items():
-                    for error in errors:
-                        yield from serialize(error, path, field)
-            else:
-                for error in issue.error_list:
-                    message = error.message
-                    if error.params:
-                        message %= error.params
-                    yield {
-                        'path': path + [field_name] if field_name else path,
-                        'message': str(message),
-                        'params': getattr(error, 'params', {}),
-                        'code': getattr(error, 'code', None),
-                    }
-
-        issues = list(serialize(exception, graphql_path))
-        raise exceptions.ValidationError(issues) from exception
 
 
     # Django field conversion to GraphQL type
@@ -514,8 +578,8 @@ class DjangoModelManager(ModelManager):
         """
         # enum
         if getattr(field, 'choices', None):
-            graphql_type = convert.to_graphql_enum_from_choices(
-                prefix = f'{self.model_config.name}__{field.name}',
+            graphql_type = conversion.to_graphql_enum_from_choices(
+                prefix = f'{self.model_config.types_name}__{field.name}',
                 choices = field.choices,
                 schema = self.model_config.schema,
             )
@@ -530,7 +594,7 @@ class DjangoModelManager(ModelManager):
                     self._to_graphql_type_from_field(field.base_field))
         # unrecognized
         else:
-            raise ValueError(f'Could not convert {field} to graphql type')
+            raise ValueError(f'Could not conversion {field} to graphql type')
         # result
         return graphql_type
 

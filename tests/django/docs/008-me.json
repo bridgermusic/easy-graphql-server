@@ -15,34 +15,46 @@
   "data": null,
   "errors": [
     {
-      "message": "Cannot query field 'houses' on type 'me__output_type'.",
+      "message": "{\"error\": \"UNEXPECTED_QUERIED_FIELD\", \"payload\": {\"unexpected_field_name\": \"houses\", \"parent_type_name\": \"me__output_type\", \"suggestions\": [], \"path\": [\"query\", \"me\", \"houses\"]}}",
       "locations": [
         {
           "line": 4,
           "column": 5
         }
       ],
-      "path": null
+      "path": [
+        "query",
+        "me",
+        "houses"
+      ]
     },
     {
-      "message": "Cannot query field 'home' on type 'me__output_type'.",
+      "message": "{\"error\": \"UNEXPECTED_QUERIED_FIELD\", \"payload\": {\"unexpected_field_name\": \"home\", \"parent_type_name\": \"me__output_type\", \"suggestions\": [], \"path\": [\"query\", \"me\", \"home\"]}}",
       "locations": [
         {
           "line": 4,
           "column": 13
         }
       ],
-      "path": null
+      "path": [
+        "query",
+        "me",
+        "home"
+      ]
     },
     {
-      "message": "Cannot query field 'daily_occupations' on type 'me__output_type'.",
+      "message": "{\"error\": \"UNEXPECTED_QUERIED_FIELD\", \"payload\": {\"unexpected_field_name\": \"daily_occupations\", \"parent_type_name\": \"me__output_type\", \"suggestions\": [], \"path\": [\"query\", \"me\", \"daily_occupations\"]}}",
       "locations": [
         {
           "line": 4,
           "column": 19
         }
       ],
-      "path": null
+      "path": [
+        "query",
+        "me",
+        "daily_occupations"
+      ]
     }
   ]
 }

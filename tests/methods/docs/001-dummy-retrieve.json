@@ -1,17 +1,20 @@
 {
-    "data": null,
-    "errors": [
+  "data": null,
+  "errors": [
+    {
+      "message": "{\"error\": \"MISSING_ARGUMENT\", \"payload\": {\"parent_type_name\": \"dummy_retrieve\", \"expected_argument_name\": \"input_identifier\", \"expected_type\": \"Int!\", \"path\": [\"query\", \"dummy_retrieve\"]}}",
+      "locations": [
         {
-            "message": "Field 'dummy_retrieve' argument 'input_identifier' of type 'Int!' is required, but it was not provided.",
-            "locations": [
-                {
-                    "line": 2,
-                    "column": 3
-                }
-            ],
-            "path": null
+          "line": 2,
+          "column": 3
         }
-    ]
+      ],
+      "path": [
+        "query",
+        "dummy_retrieve"
+      ]
+    }
+  ]
 }
 
 ;

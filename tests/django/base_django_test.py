@@ -22,7 +22,7 @@ class BaseDjangoTest(django.test.TransactionTestCase):
         try:
             user = user_model.objects.get(username = username)
         except user_model.DoesNotExist:
-            user, created = django.contrib.auth.get_user_model().objects.get_or_create(**data)
+            user = django.contrib.auth.get_user_model()(**data)
             user.set_password(settings.DEFAULT_USER_PASSWORD)
             user.save()
         return user

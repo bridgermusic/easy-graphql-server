@@ -3,14 +3,14 @@
 from re import search
 from setuptools import setup, find_packages
 
-version = '0.8.1a0',
+version = '0.9.31',
 
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
 setup(
     name='easy_graphql_server',
-    version = '0.8.1a0',
+    version = '0.9.31',
     description='Easy to use abstraction layer for GraphQL, with support for Django ORM.',
     long_description=readme,
     long_description_content_type='text/markdown',
@@ -20,7 +20,7 @@ setup(
     author_email='graphql@rodic.fr',
     license='MIT license',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries',
         'License :: OSI Approved :: MIT License',
@@ -47,7 +47,10 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     # PEP-561: https://www.python.org/dev/peps/pep-0561/
-    package_data={'easy_graphql_server': ['py.typed']},
+    package_data={
+        'easy_graphql_server': ['py.typed'],
+        'easy_graphql_server.webserver.static': ['*'],
+    },
     include_package_data=True,
     zip_safe=False,
 )

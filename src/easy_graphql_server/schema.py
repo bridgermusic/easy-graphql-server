@@ -3,17 +3,21 @@
     a central point to the easy_graphql_server API.
 """
 
+import re
+import json
 import inspect
 from collections import defaultdict
+import logging
+import threading
 
 from graphql import GraphQLSchema, GraphQLField, GraphQLObjectType
-# Had to disable pylint below, because "No name '...' in module '...'" and "Unable to import '...'"
-from graphql.type.validate import validate_schema # pylint: disable=E0611,E0401
-from graphql.utilities import get_introspection_query # pylint: disable=E0611,E0401
+from graphql.type.validate import validate_schema # pylint: disable=no-name-in-module,import-error
+from graphql.utilities import get_introspection_query # pylint: disable=no-name-in-module,import-error
 from graphql.graphql import graphql_sync
+from graphql.language.ast import FieldNode, InlineFragmentNode, FragmentSpreadNode
 
 from . import exceptions, exposition, introspection
-from .convert import to_graphql_type, to_graphql_argument
+from .conversion import to_graphql_type, to_graphql_argument
 from .model_config import ModelConfig
 from .casing import Casing
 from .context import ContextValue
@@ -36,36 +40,44 @@ class Schema:
         Schema can be validated using `Schema.check()`.
     """
 
+    _requests_logger = logging.getLogger('easy_graphql_server.requests')
+    _processing_logger = logging.getLogger('easy_graphql_server.processing')
+    _lock = threading.Lock()
+
     # public methods
 
-    def __init__(self, casing=Casing.SNAKE):
+    def __init__(self, debug=False, casing=Casing.SNAKE, restrict_models_queried_fields=False,
+        models_max_depth=None, models_limit=-1, models_allowed_lookups=None, models_disallowed_lookups=None):
         self.methods = defaultdict(dict)
         self.subclasses = []
         self.dirty = True
         self.graphql_schema = None
         self.models_configs = []
+        # options
         self.case_manager = casing.value
+        self.debug = debug
+        self.restrict_models_queried_fields = restrict_models_queried_fields
+        self.models_max_depth = models_max_depth
+        self.models_limit = models_limit
+        self.models_allowed_lookups = models_allowed_lookups
+        self.models_disallowed_lookups = models_disallowed_lookups
         # abstract parent classes
         class Exposed(exposition.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.Exposed = Exposed # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.Exposed = Exposed # pylint: disable=invalid-name
         class ExposedModel(exposition.ExposedModel, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedModel = ExposedModel # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedModel = ExposedModel # pylint: disable=invalid-name
         class ExposedQuery(exposition.ExposedQuery, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedQuery = ExposedQuery # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedQuery = ExposedQuery # pylint: disable=invalid-name
         class ExposedMutation(exposition.ExposedMutation, self.Exposed):
-            # pylint: disable=R0903 # Too few public methods
-            # pylint: disable=C0115 # Missing class docstring
+            # pylint: disable=too-few-public-methods,missing-class-docstring
             pass
-        self.ExposedMutation = ExposedMutation # pylint: disable=C0103 # doesn't conform to snake_case naming style
+        self.ExposedMutation = ExposedMutation # pylint: disable=invalid-name
         self.orm_model_manager_classes = []
 
     def get_documentation(self, with_descriptions=False):
@@ -84,13 +96,7 @@ class Schema:
         if not inspect.isclass(cls):
             raise ValueError('Parameter to `expose()` method should be a class, '
                 f'`{cls}` was given instead.')
-        accepted_parent_classes = (
-            exposition.ExposedQuery, exposition.ExposedMutation, exposition.ExposedModel)
-        if not issubclass(cls, accepted_parent_classes):
-            raise ValueError('Parameter to `expose()` method should be a subclass of either '
-                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or '
-                f'`exposition.ExposedModel`, but `{cls}` was found instead')
-        self.subclasses.append(cls)
+        self._expose_from_subclass(cls)
 
     def expose_query(self, **options):
         """
@@ -115,18 +121,38 @@ class Schema:
             See `ModelConfig` class constructor for more info about options.
         """
         self.dirty = True
+        if 'restrict_queried_fields' not in options:
+            options['restrict_queried_fields'] = self.restrict_models_queried_fields
+        for option_name in ('max_depth', 'limit', 'allowed_lookups', 'disallowed_lookups'):
+            if option_name not in options:
+                options[option_name] = getattr(self, f'models_{option_name}')
         model_config = ModelConfig(orm_model=orm_model, schema=self, **options)
         self.models_configs.append(model_config)
         orm_model_manager_class = model_config.orm_model_manager.__class__
         if orm_model_manager_class not in self.orm_model_manager_classes:
             self.orm_model_manager_classes.append(orm_model_manager_class)
 
-    def execute(self, query, variables=None, operation_name=None, # pylint: disable=R0913 # Too many arguments
+    def execute(self, query, variables=None, operation_name=None,
             authenticated_user=None,
             serializable_output=False):
         """
             Execute a GraphQL query within the schema.
         """
+        # debug logging
+        self._requests_logger.debug(json.dumps({
+            'authenticated_user': authenticated_user.username if authenticated_user is not None else None,
+            'query': query,
+            'operation_name': operation_name,
+            'variables': variables,
+        }))
+        # info logging
+        simpler_query = re.sub(r'#[^\n]+', '', query)
+        simpler_query = re.sub(r'\s+', ' ', simpler_query).strip()
+        self._requests_logger.info(json.dumps({
+            'authenticated_user': authenticated_user.username if authenticated_user is not None else None,
+            'query': simpler_query[:64] + '...' if len(simpler_query) > 64 else simpler_query,
+        }))
+        # actual query execution
         result = graphql_sync(
             schema = self._get_graphql_schema(),
             source = query,
@@ -136,6 +162,7 @@ class Schema:
                 authenticated_user = authenticated_user,
             ),
         )
+        # must the output be serializable?
         if serializable_output:
             formatted_result = result.formatted
             if 'errors' in formatted_result and not formatted_result['errors']:
@@ -151,7 +178,6 @@ class Schema:
             graphql_schema = self._get_graphql_schema()
         for error in validate_schema(graphql_schema):
             raise error
-        self.dirty = False
 
     def get_model_config(self, orm_model=None, name=None):
         """
@@ -166,7 +192,7 @@ class Schema:
                 return model_config
         return None
 
-    def as_django_view(self):
+    def as_django_view(self, with_graphiql=True, compute_user=True):
         """
             Expose schema as a Django view.
 
@@ -183,9 +209,13 @@ class Schema:
             ]
             ```
         """
-        # pylint: disable=C0415 # Import outside toplevel
+        # pylint: disable=import-outside-toplevel
         from .webserver.django_schema_view import DjangoSchemaView
-        return DjangoSchemaView(schema=self).view
+        return DjangoSchemaView(
+            schema = self,
+            with_graphiql = with_graphiql,
+            compute_user = compute_user
+        ).view
 
     def as_flask_view(self):
         """
@@ -207,88 +237,93 @@ class Schema:
                 view_func = schema.as_flask_view())
             ```
         """
-        # pylint: disable=C0415 # Import outside toplevel
+        # pylint: disable=import-outside-toplevel
         from .webserver.flask_schema_view import FlaskSchemaView
         return FlaskSchemaView(schema=self).view
 
     # private attributes & methods
 
-    # pylint: disable=R0913 # Too many arguments
     def _expose_method(self, type_, name, method, input_format=None, output_format=None,
             pass_graphql_selection=False, pass_graphql_path=False,
-            pass_authenticated_user=False, force_authenticated_user=False):
-        # pylint: disable=E1123 # Unexpected keyword argument 'resolve' in constructor call
+            pass_authenticated_user=False, require_authenticated_user=False, deprecation_message=None):
         self.methods[type_][name] = GraphQLField(
-        # output format
-        type_ = to_graphql_type(
-            type_ = output_format,
-            prefix = name,
-            for_input = False,
-            schema = self,
-        ) if output_format else None,
-        # input format
-        args = to_graphql_argument(
-            type_ = input_format,
-            prefix = name,
-            schema = self,
-        ) if input_format else None,
-        # resolve method
-        resolve = self._make_callback(
-            type_ = type_,
-            method = method,
-            pass_graphql_selection = (
-                'graphql_selection'
-                if pass_graphql_selection is True else
-                pass_graphql_selection
+            # output format
+            type_ = to_graphql_type(
+                type_ = output_format,
+                prefix = name,
+                for_input = False,
+                schema = self,
+            ) if output_format else None,
+            # input format
+            args = to_graphql_argument(
+                type_ = input_format,
+                prefix = name,
+                schema = self,
+            ) if input_format else None,
+            # resolve method
+            resolve = self._make_callback(
+                type_ = type_,
+                method = method,
+                pass_graphql_selection = (
+                    'graphql_selection'
+                    if pass_graphql_selection is True else
+                    pass_graphql_selection
+                ),
+                pass_graphql_path = (
+                    'graphql_path'
+                    if pass_graphql_path is True else
+                    pass_graphql_path
+                ),
+                pass_authenticated_user = (
+                    'authenticated_user'
+                    if pass_authenticated_user is True else
+                    pass_authenticated_user
+                ),
+                require_authenticated_user = require_authenticated_user,
             ),
-            pass_graphql_path = (
-                'graphql_path'
-                if pass_graphql_path is True else
-                pass_graphql_path
-            ),
-            pass_authenticated_user = (
-                'authenticated_user'
-                if pass_authenticated_user is True else
-                pass_authenticated_user
-            ),
-            force_authenticated_user = force_authenticated_user,
-        ),
+            # deprecation
+            deprecation_reason = deprecation_message,
         )
         # schema is not up to date anymore
         self.dirty = True
+
+    def _expose_from_subclass(self, subclass):
+        subclass_attributes = introspection.get_public_class_attributes(subclass)
+        # different parent classes, different results
+        if issubclass(subclass, exposition.ExposedModel):
+            message = ' when subclassing `ExposedModel`'
+            exposition_method = self.expose_model
+            validation_method = ModelConfig
+            excluded_arguments = ('self', 'schema')
+        elif issubclass(subclass, exposition.ExposedQuery):
+            message = ' when subclassing `ExposedQuery`'
+            exposition_method = self.expose_query
+            validation_method = self._expose_method
+            excluded_arguments = ('self', 'type_')
+        elif issubclass(subclass, exposition.ExposedMutation):
+            message = ' when subclassing `ExposedMutation`'
+            exposition_method = self.expose_mutation
+            validation_method = self._expose_method
+            excluded_arguments = ('self', 'type_')
+        else:
+            raise ValueError('Parameter to `expose()` method should be a subclass of either '
+                '`exposition.ExposedQuery`, `exposition.ExposedMutation` or '
+                f'`exposition.ExposedModel`, but `{subclass}` was found instead')
+        # attributes validation
+        introspection.validate_class_attributes_against_method_arguments(
+            cls = subclass,
+            method = validation_method,
+            excluded_arguments = excluded_arguments,
+            message = message)
+        # actual exposition
+        exposition_method(**subclass_attributes)
 
     def _collect_from_classes(self):
         for subclass in introspection.get_subclasses(self.Exposed):
             if subclass not in (self.ExposedModel, self.ExposedQuery, self.ExposedMutation):
                 self.expose(subclass)
         for subclass in self.subclasses:
-            subclass_attributes = introspection.get_public_class_attributes(subclass)
-            # different parent classes, different results
-            if issubclass(subclass, exposition.ExposedModel):
-                message = ' when subclassing `ExposedModel`'
-                exposition_method = self.expose_model
-                validation_method = ModelConfig
-                excluded_arguments = ('self', 'schema')
-            elif issubclass(subclass, exposition.ExposedQuery):
-                message = ' when subclassing `ExposedQuery`'
-                exposition_method = self.expose_query
-                validation_method = self._expose_method
-                excluded_arguments = ('self', 'type_')
-            elif issubclass(subclass, exposition.ExposedMutation):
-                message = ' when subclassing `ExposedMutation`'
-                exposition_method = self.expose_mutation
-                validation_method = self._expose_method
-                excluded_arguments = ('self', 'type_')
-            else:
-                raise ValueError(f'Unrecognized class: {subclass}')
-            # attributes validation
-            introspection.validate_class_attributes_against_method_arguments(
-                cls = subclass,
-                method = validation_method,
-                excluded_arguments = excluded_arguments,
-                message = message)
-            # actual exposition
-            exposition_method(**subclass_attributes)
+            self._expose_from_subclass(subclass)
 
 
     # build schema when modified, returned cached version otherwise
@@ -307,60 +342,53 @@ class Schema:
         )
 
     def _get_graphql_schema(self):
-        if self.dirty:
-            graphql_schema = self._make_graphql_schema()
-            self.check(graphql_schema)
-            self.graphql_schema = graphql_schema
-            self.dirty = False
+        with self._lock:
+            if self.dirty:
+                graphql_schema = self._make_graphql_schema()
+                self.check(graphql_schema)
+                self.graphql_schema = graphql_schema
+                self.dirty = False
         return self.graphql_schema
 
     # build wrapper around passed methods to build a callback
 
-    def _make_callback(self, type_, method, # pylint: disable=R0913 # Too many arguments
+    def _make_callback(self, type_, method,
             pass_graphql_selection, pass_graphql_path,
-            pass_authenticated_user, force_authenticated_user):
-        def callback(source, info, **kwargs): # pylint: disable=W0613 # Unused argument 'source'
+            pass_authenticated_user, require_authenticated_user):
+        def callback(source, info, **kwargs): # pylint: disable=unused-argument
             try:
                 # ensure authenticated user when mandatory
-                if force_authenticated_user or pass_authenticated_user:
+                if require_authenticated_user or pass_authenticated_user:
                     authenticated_user = info.context.authenticated_user
-                if force_authenticated_user and not authenticated_user:
+                if require_authenticated_user and not authenticated_user:
                     raise exceptions.UnauthenticatedError()
                 # pass parameters
                 if pass_authenticated_user:
                     kwargs[pass_authenticated_user] = authenticated_user
                 if pass_graphql_selection:
                     kwargs[pass_graphql_selection] = self._get_graphql_selection(
-                        info.field_nodes[0].selection_set)
+                        info.field_nodes[0].selection_set, info.fragments)
                 if pass_graphql_path:
                     kwargs[pass_graphql_path] = [type_, info.path.key]
                 # executed method
                 return method(**kwargs)
-            except exceptions.BaseError:
+            except exceptions.BaseError as error:
+                self._processing_logger.warning(error.format_for_logs())
                 raise
             except Exception as error:
-                traceback = getattr(error, '__traceback__')
-                print('\n\n' + 80 * '*' + '\n*')
-                print(f'* {type(error).__qualname__}')
-                print('*')
-                for arg in error.args:
-                    print(f'* {arg}')
-                print('*')
-                while traceback:
-                    # pylint: disable=E1101 # Class 'tb_frame' has no 'f_code' member
-                    print(f'*  {traceback.tb_frame.f_code.co_filename}:{traceback.tb_lineno}')
-                    traceback = traceback.tb_next
-                print('*\n' + 80 * '*' + '\n')
-                raise Exception(
-                    f'{type(error).__name__}: '
-                    + '; '.join(map(str, error.args or []))
-                ) from error
+                formatted_error = exceptions.InternalError(error)
+                self._processing_logger.error(formatted_error.format_for_logs())
+                if self.debug:
+                    raise formatted_error from error
+                raise exceptions.InternalError()
         return callback
 
     # using GraphQL core AST tree to return the GraphQL selection
 
+
+
     @classmethod
-    def _get_graphql_selection(cls, selection_set):
+    def _get_graphql_selection(cls, selection_set, fragments, visited_fragments=None):
         """
             Return the GraphQL selection as a mapping.
 
@@ -390,9 +418,28 @@ class Schema:
             }
             ```
         """
-        return {
-            selection.name.value: (
-                cls._get_graphql_selection(selection.selection_set)
-                if selection.selection_set else None)
-            for selection in selection_set.selections
-        }
+        # variables initialization
+        if visited_fragments is None:
+            visited_fragments = set()
+        result = {}
+        # browse selection
+        for selection in selection_set.selections:
+            if isinstance(selection, FieldNode):
+                name = selection.alias.value if selection.alias else selection.name.value
+                if name == '__typename':
+                    continue
+                result[name] = (
+                    cls._get_graphql_selection(selection.selection_set, fragments, visited_fragments)
+                    if getattr(selection, 'selection_set', None) else None)
+            elif isinstance(selection, InlineFragmentNode):
+                raise NotImplementedError()
+            elif isinstance(selection, FragmentSpreadNode):
+                fragment = fragments.get(selection.name.value)
+                if not fragment or not hasattr(fragment, 'selection_set'):
+                    continue
+                result.update(
+                    cls._get_graphql_selection(
+                        fragment.selection_set, fragments, visited_fragments | {selection.name.value})
+                )
+        # the end!
+        return result

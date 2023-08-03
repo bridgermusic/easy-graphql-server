@@ -24,14 +24,17 @@
   "data": null,
   "errors": [
     {
-      "message": "Field 'create_person' argument 'username' of type 'String!' is required, but it was not provided.",
+      "message": "{\"error\": \"MISSING_ARGUMENT\", \"payload\": {\"parent_type_name\": \"create_person\", \"expected_argument_name\": \"username\", \"expected_type\": \"String!\", \"path\": [\"mutation\", \"create_person\"]}}",
       "locations": [
         {
           "line": 2,
           "column": 3
         }
       ],
-      "path": null
+      "path": [
+        "mutation",
+        "create_person"
+      ]
     }
   ]
 }
@@ -80,14 +83,19 @@
   "data": null,
   "errors": [
     {
-      "message": "Field 'id' is not defined by type 'update_person_____input_type'.",
+      "message": "{\"error\": \"UNEXPECTED_ARGUMENT\", \"payload\": {\"unexpected_argument_name\": \"id\", \"parent_type_name\": \"update_person_____input_type\", \"path\": [\"mutation\", \"update_person\", \"_\", \"id\"]}}",
       "locations": [
         {
-          "line": 2,
+          "line": 3,
           "column": 29
         }
       ],
-      "path": null
+      "path": [
+        "mutation",
+        "update_person",
+        "_",
+        "id"
+      ]
     }
   ]
 }

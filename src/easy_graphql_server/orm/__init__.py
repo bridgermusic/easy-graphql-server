@@ -43,7 +43,7 @@ class ORM(enum.Enum):
         """
             Returns manager class corresponding to a given model.
         """
-        # pylint: disable=C0415 # Import outside toplevel
+        # pylint: disable=import-outside-toplevel
         # managers are directly imported below `if` clauses, so we don't have to install
         # all ORMs for `easy_graphql_server` to function
         orm = cls.identify(orm_model)
@@ -62,9 +62,9 @@ class ORM(enum.Enum):
         raise ValueError('This should not happen.')
 
     @classmethod
-    def get_manager(cls, orm_model, model_config):
+    def get_manager(cls, orm_model, model_config, restrict_queried_fields):
         """
             Returns manager object corresponding to a given model.
         """
         manager_class = cls.get_manager_class(orm_model)
-        return manager_class(orm_model, model_config)
+        return manager_class(orm_model, model_config, restrict_queried_fields)

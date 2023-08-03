@@ -5,15 +5,17 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 
 
-schema = easy_graphql_server.Schema()
+schema = easy_graphql_server.Schema(debug=True, restrict_models_queried_fields=True)
 
-def create_or_update_person_birth_date(instance, authenticated_user, data):
-    instance.birth_date = data
+def create_or_update_person_birth_date(instance, authenticated_user, value):
+    instance.birth_date = value
 schema.expose_model(
     orm_model = Person,
+    name = 'person',
     plural_name = 'people',
     can_expose = ('id', 'username', 'first_name', 'last_name', 'birth_date',
-        'houses', 'home', 'daily_occupations', 'gender'),
+        'houses', 'home', 'daily_occupations', 'gender', ),
+    can_read = ('updates_count', 'creation_data', ),
     custom_fields = [
         {
             'name': 'same_as_birth_date',
@@ -22,12 +24,12 @@ schema.expose_model(
             'update_one': create_or_update_person_birth_date,
             'create_one': create_or_update_person_birth_date,
         }
-    ]
+    ],
 )
 
 schema.expose_query(
     name = 'me',
-    force_authenticated_user = True,
+    require_authenticated_user = True,
     pass_authenticated_user = True,
     output_format = easy_graphql_server.Model('person').output_format + {
         'is_superuser': bool, 'is_staff': bool,
@@ -37,6 +39,7 @@ schema.expose_query(
 
 schema.expose_model(
     orm_model = House,
+    name = 'house',
     custom_fields = [
         {
             'name': 'tenants_occupations',
@@ -59,11 +62,13 @@ schema.expose_model(
 )
 
 schema.expose_model(
+    name = 'daily_occupation',
     orm_model = DailyOccupation,
     only_when_child_of = Person,
 )
 
 schema.expose_model(
+    name = 'bank_account',
     orm_model = BankAccount,
-    force_authenticated_user = True,
+    require_authenticated_user = True,
 )

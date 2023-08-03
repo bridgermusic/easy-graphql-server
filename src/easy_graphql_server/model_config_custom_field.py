@@ -11,7 +11,6 @@ class ModelConfigCustomField:
 
     def __init__(self, name, format, read_one=None, read_many=None,
             update_one=None, update_many=None, create_one=None, create_many=None):
-        # pylint: disable=R0913 # Too many arguments
         self.name = name
         self.format = format
         self.read_one = read_one
@@ -68,7 +67,7 @@ class ModelConfigCustomField:
             ]
         raise NotImplementedError()
 
-    def perform_one_creation(self, instance, authenticated_user, data):
+    def perform_one_creation(self, instance, authenticated_user, value):
         """
             Update the custom field for one instance
         """
@@ -76,15 +75,15 @@ class ModelConfigCustomField:
             return self.create_one(
                 instance=instance,
                 authenticated_user=authenticated_user,
-                data=data)
+                value=value)
         if self.create_many:
             return list(self.create_many(
                 instances=[instance],
                 authenticated_user=authenticated_user,
-                data=data))[0]
+                value=value))[0]
         raise NotImplementedError()
 
-    def perform_one_update(self, instance, authenticated_user, data):
+    def perform_one_update(self, instance, authenticated_user, value):
         """
             Update the custom field for one instance
         """
@@ -92,10 +91,10 @@ class ModelConfigCustomField:
             return self.update_one(
                 instance=instance,
                 authenticated_user=authenticated_user,
-                data=data)
+                value=value)
         if self.update_many:
             return list(self.update_many(
                 instances=[instance],
                 authenticated_user=authenticated_user,
-                data=data))[0]
+                value=value))[0]
         raise NotImplementedError()

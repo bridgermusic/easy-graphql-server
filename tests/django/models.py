@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 from django.db import models
 from django.db.models import Q
@@ -9,6 +10,7 @@ from django.conf import settings
 from faker import Faker
 
 from easy_graphql_server import Operation
+from easy_graphql_server.custom_json import JSONEncoder
 
 
 GENDER_CHOICES = ('female', 'male', 'other')
@@ -35,13 +37,19 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
         null=True,
         on_delete=models.SET_NULL,
         related_name='tenants')
+    updates_count = models.IntegerField(blank=True, default=0)
+    creation_data = models.JSONField(blank=True, null=True, encoder=JSONEncoder)
 
     USERNAME_FIELD = 'username'
-
     objects = django.contrib.auth.models.UserManager()
 
-    def clean(self):
-        # pylint: disable=E1101 # Instance of 'Person' has no 'daily_occupations' member
+    def on_before_operation(self, authenticated_user, operation, data=None):
+        if operation == Operation.UPDATE:
+            self.updates_count += 1
+        elif operation == Operation.CREATE:
+            self.creation_data = data
+
+    def clean_related(self):
         daily_occupations = list(self.daily_occupations.all())
         if daily_occupations:
             hours_sum = 0
@@ -56,10 +64,10 @@ class Person(django.contrib.auth.models.AbstractBaseUser):
                     )
                 ]})
 
-    def ensure_permissions(self, authenticated_user, operation, data):
+    def has_permission(self, authenticated_user, operation, data):
         # unauthenticated requests can only create or read people
         if authenticated_user is None:
-            return operation in (Operation.CREATE, Operation.READ)
+            return operation == Operation.CREATE and not self.is_staff and not self.is_superuser
         # superusers can do anything
         if authenticated_user.is_superuser:
             return True
@@ -85,7 +93,8 @@ class House(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='houses')
-    def filter_by_authenticated_user(queryset, authenticated_user):
+    @staticmethod
+    def filter_for_user(queryset, authenticated_user):
         if not authenticated_user:
             return queryset.none()
         if authenticated_user.is_superuser:
@@ -123,18 +132,18 @@ class BankAccount(models.Model):
         on_delete=models.CASCADE,
         related_name='bank_accounts')
 
-    def ensure_permissions(self, authenticated_user, operation, data):
+    def has_permission(self, authenticated_user, operation, data):
         if authenticated_user.is_superuser:
             return True
         return self.owner_id == authenticated_user.id
 
-    @classmethod
-    def filter_permitted(cls, authenticated_user):
+    @staticmethod
+    def filter_for_user(queryset, authenticated_user):
         if not authenticated_user:
-            return cls.objects.none()
+            return queryset.none()
         if authenticated_user.is_superuser:
-            return cls.objects
-        return cls.objects.filter(owner_id = authenticated_user.id)
+            return queryset
+        return queryset.filter(owner_id = authenticated_user.id)
 
 
 template_database = None
@@ -162,8 +171,8 @@ def populate_database(random_seed=1985, houses_count=123, people_count=456, max_
         raise Exception('`populate_database()` should be called on an empty database')
 
     # initialize generator
-    Faker.seed(random_seed)
     fake = Faker()
+    fake.seed_instance(random_seed)
 
     # populate houses
     for i in range(houses_count):

@@ -8,9 +8,9 @@ import re
 import enum
 import datetime
 import decimal
+import threading
 
-# Had to disable pylint below, because "No name '...' in module '...'"
-from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=E0611
+from graphql.type.definition import GraphQLType, GraphQLInputField # pylint: disable=
 from graphql import \
     GraphQLEnumType, GraphQLEnumValue, \
     GraphQLField, GraphQLArgument, \
@@ -37,6 +37,7 @@ PYTHON_GRAPHQL_TYPES_MAPPING = {
 
 
 _enums_cache = {}
+_enums_cache_lock = threading.Lock()
 
 
 def to_graphql_enum_key(name, capitalize=True):
@@ -45,26 +46,33 @@ def to_graphql_enum_key(name, capitalize=True):
 
         (only uppercase letters, underscores and digits, cannot start with a digit)
     """
-    key = re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', name)
+    key = re.sub(r'(?:^\d|[^a-zA-Z0-9])', '_', str(name))
     if capitalize:
         return key.upper()
     return key
 
 def to_graphql_enum_from_choices(prefix, choices, description=None, capitalize=True, schema=None):
-    # pylint: disable=W0613 # Unused argument 'schema'
+    # pylint: disable=unused-argument
     """
         Create a `GraphQLEnumType` from a list of choices.
 
         Choices must presented as a list of key-value pairs.
     """
-    if prefix in _enums_cache:
-        graphql_type = _enums_cache[prefix]
-    else:
-        graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
-            to_graphql_enum_key(key, capitalize): GraphQLEnumValue(key, value)
-            for key, value in choices
-        }, description=description)
+    with _enums_cache_lock:
+        if prefix in _enums_cache:
+            graphql_type = _enums_cache[prefix]
+        else:
+            graphql_type = _enums_cache[prefix] = GraphQLEnumType(f'{prefix}__enum_type', {
+                to_graphql_enum_key(key, capitalize): GraphQLEnumValue(key, value)
+                for key, value in choices
+            }, description=description)
     return graphql_type
+
+def to_graphql_enum_from_enum(prefix, enum):
+    """
+        Create a `GraphQLEnumType` from a subclass of native Python Enum.
+    """
+    raise NotImplementedError()
 
 def to_graphql_type(type_, prefix, for_input=False, schema=None):
     """
@@ -93,7 +101,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
             to_graphql_type(type_[0], prefix, for_input=for_input, schema=schema)
         )
     # mandatory
-    if isinstance(type_, types.Mandatory):
+    if isinstance(type_, types.Required):
         return graphql_types.NonNull(
             to_graphql_type(type_.type_, prefix, for_input=for_input, schema=schema)
         )
@@ -105,7 +113,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
                 '(consider changing the order of expositions declaration)')
         mapping = model_config.get_type_mapping(
             operation = type_.operation,
-            with_custom_fields = False)
+            with_custom_fields = True)
         if not type_.exclude and not type_.additional:
             return to_graphql_type(
                 type_ = mapping,
@@ -126,7 +134,7 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
         if model_config is None:
             raise ValueError(f'No model in schema with name `{type_.model_name}` '
                 '(consider changing the order of expositions declaration)')
-        mapping = model_config.get_type_mapping(with_custom_fields = False)
+        mapping = model_config.get_type_mapping(with_custom_fields = True)
         try:
             for field_name in type_.field_path:
                 mapping = mapping[field_name]
@@ -140,6 +148,10 @@ def to_graphql_type(type_, prefix, for_input=False, schema=None):
             for_input = for_input,
             schema = schema)
     # oops.
+    if isinstance(type_, types.Model):
+        raise ValueError('Could not convert `easy_graphql_server.Model` instance '
+            'to graphql type, use instead `Model(...).output_format`, '
+            '`Model(...).create_input_format` or `Model(...).update_input_format`')
     raise ValueError(f'Could not convert {type_} to graphql type')
 
 

@@ -3,6 +3,7 @@
 """
 
 from django.http import HttpResponse, JsonResponse
+import django.contrib.auth
 from ._schema_view import SchemaView
 
 
@@ -12,15 +13,22 @@ class DjangoSchemaView(SchemaView):
         Django schema view. Used when calling `Schema.as_django_view()`.
     """
 
+    def __init__(self, *args, **kwargs):
+        self.compute_user = kwargs.pop('compute_user', True)
+        super().__init__(*args, **kwargs)
+
     def view(self, request):
         """
             Django view to compute GraphQL request
         """
-        # extract user
-        if request.user and request.user.is_authenticated and not request.user.is_anonymous:
-            authenticated_user = request.user
-        else:
-            authenticated_user = None
+        # compute user when requested and not present
+        authenticated_user = request.user
+        if self.compute_user:
+            if not authenticated_user or not authenticated_user.is_authenticated or authenticated_user.is_anonymous:
+                try:
+                    authenticated_user = django.contrib.auth.authenticate(request)
+                except Exception: # pylint: disable=broad-except
+                    pass
         # compute result
         result = self.compute_response(
             method = request.method,
